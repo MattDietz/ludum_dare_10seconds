@@ -19,6 +19,7 @@
 const int WALK = 1;
 const int MAX_WALK = 4;
 const int MOVE_DELTA = MAX_WALK;
+const float JUMP_SPEED = -30.0f;
 
 const float GRAVITY = 3.f;
 const float TERMINAL_VELOCITY = 15.f;
@@ -55,15 +56,15 @@ int simple_map[20][20] = {
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,3,3,3,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 };
@@ -97,7 +98,7 @@ void init_map()
     for (int j=0; j < MAP_HEIGHT; j++) {
       int map_tile = simple_map[j][i];
       if (map_tile > 0) {
-        game_map[i][j] = new Tile(&animations[map_tile], false);
+        game_map[i][j] = new Tile(&animations[map_tile-1], false);
       } else
         game_map[i][j] = new Tile();
     }
@@ -172,6 +173,7 @@ void init_game()
   player->set_walk_speed(WALK, MAX_WALK);
   player->set_movement(0, 0);
   player->set_fall_speed(GRAVITY, TERMINAL_VELOCITY);
+  player->set_jump_speed(JUMP_SPEED);
 
   camera.set_absolute(0, 0);
   camera.set_window_size(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -218,8 +220,50 @@ bool player_collide_vertical(Point left, Point right) {
   Point player_tile_right = tile_helper.toTileCoords(right);
 
   for (int i = (int)player_tile_left.x; i <= (int)player_tile_right.x; ++i) {
-    if (!game_map[i][int(player_tile_left.y)]->passable())
+    if (!game_map[i][int(player_tile_left.y)]->passable()) {
+      int ptl = (int) player_tile_left.y;
+      Point tile_world = tile_helper.fromTileCoords(i, ptl); 
       return true;
+    }
+  }
+  return false;
+}
+
+bool player_collide_bottom(Point left, Point right, Point left_delta, Point right_delta) {
+  Point player_tile_left = tile_helper.toTileCoords(left_delta);
+  if (player_tile_left.y < 0 || player_tile_left.y >= MAP_HEIGHT)
+    return true;
+
+  Point player_tile_right = tile_helper.toTileCoords(right_delta);
+
+  for (int i = (int)player_tile_left.x; i <= (int)player_tile_right.x; ++i) {
+    if (!game_map[i][int(player_tile_left.y)]->passable()) {
+      sf::Vector2f player_movement = player->get_movement();
+      int ptl = (int) player_tile_left.y;
+      Point tile_world = tile_helper.fromTileCoords(i, ptl); 
+      float delta_y = float(tile_world.y - left.y);
+      /*
+       * Three states:
+       *
+       * Falling, but we'll land on this frame
+       * Still Falling
+       * Landed
+       *
+       * Falling, but land -> set_movement(player.move.x, diff(player, tile));
+       * Still falling -> do nothing
+       * landed -> unset(ENTITY_JUMPING) - landed counts as 1 px above the tile
+       */
+      if (delta_y == 1.f) {
+        player->unset_state(ENTITY_JUMPING);
+        player->set_movement(player_movement.x, 0);
+      } else if (delta_y > 1.f && delta_y <= player_movement.y) {
+        player->unset_state(ENTITY_JUMPING);
+        player->set_movement(player_movement.x, (delta_y - 1));
+      } else {
+        player->set_state(ENTITY_JUMPING);
+      }
+      return true;
+    }
   }
   return false;
 }
@@ -261,10 +305,10 @@ void player_move_down(float delta) {
   Point player_delta_left(player_left_coords.x, player_left_coords.y + delta);
   Point player_delta_right(player_right_coords.x, player_right_coords.y + delta);
 
-  if (player_collide_vertical(player_delta_left, player_delta_right)) {
-    sf::Vector2f move = player->get_movement();
-    player->apply_movement(0, -move.y);
-    player->unset_state(ENTITY_JUMPING);
+  if (player_collide_bottom(player_left_coords, player_right_coords, player_delta_left, player_delta_right)) {
+    //sf::Vector2f move = player->get_movement();
+    //player->apply_movement(0, -move.y);
+    //player->unset_state(ENTITY_JUMPING);
   }
   check_and_move_camera();
 }
@@ -347,11 +391,9 @@ void handle_events(sf::RenderWindow* window) {
       }
     } else if (event.type == sf::Event::KeyReleased) {
       if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
-        key_state.left_was_pressed = key_state.left_pressed;
         key_state.left_pressed = false;
       } 
       if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
-        key_state.right_was_pressed = key_state.right_pressed;
         key_state.right_pressed = false;
       }
       if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
@@ -369,7 +411,7 @@ void handle_events(sf::RenderWindow* window) {
     player->walk_right();
 
   if (key_state.space_pressed)
-    player->jump(-30.0f);
+    player->jump();
 
   if (!key_state.left_pressed && !key_state.right_pressed) {
     player->stop_walking();

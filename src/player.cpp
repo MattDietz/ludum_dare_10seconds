@@ -90,15 +90,19 @@ void Player::stop_walking() {
   }
 }
 
+void Player::set_jump_speed(float magnitude) {
+  _jump_speed = magnitude;
+}
+
 void Player::fall() {
   apply_movement(0, _fall_speed);
   if (_movement.y > _max_fall_speed)
     set_movement(_movement.x, _max_fall_speed);
 }
 
-void Player::jump(float magnitude) {
+void Player::jump() {
   if (!is_state_set(ENTITY_JUMPING)) {
-    apply_movement(0.f, magnitude);
+    apply_movement(0.f, _jump_speed);
     set_state(ENTITY_JUMPING);
   }
 }

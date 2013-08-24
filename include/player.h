@@ -19,8 +19,11 @@ public:
   Player(sf::Sprite * sprite, Point position, Rectangle bounding_rect);
   void draw(sf::RenderWindow * window, Point camera);
   void move(int x, int y);
-  void jump(float magnitude);
+
+  //Player actions
+  void jump();
   void move(Point delta);
+  void fall();
 
   int get_state();
   bool is_state_set(int state);
@@ -33,8 +36,8 @@ public:
   void walk_right();
   void stop_walking();
 
+  void set_jump_speed(float magnitude);
   void set_fall_speed(float fall, float max_fall);
-  void fall();
 
   Rectangle get_bounding_rect();
   Point position();
@@ -45,6 +48,7 @@ private:
   Rectangle _bounding_rect;
   float _walk, _max_walk;
   float _fall_speed, _max_fall_speed;
+  float _jump_speed;
 };
 
 #endif
