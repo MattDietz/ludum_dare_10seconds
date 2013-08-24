@@ -1,6 +1,7 @@
 #ifndef SCOOUNDREL_TILE_HELPER
 #define SCOUNDREL_TILE_HELPER
 
+#include <cmath>
 #include "scoundrel_utils.h"
 
 struct TileHelper {
@@ -10,15 +11,15 @@ struct TileHelper {
 
   Point toTileCoords(float x, float y) {
     Point tile_coords;
-    tile_coords.x = x / tile_width;
-    tile_coords.y = y / tile_height;
+    tile_coords.x = floor(x / tile_width);
+    tile_coords.y = floor(y / tile_height);
     return tile_coords;
   }
   
   Point toTileCoords(Point pos) {
     Point tile_coords;
-    tile_coords.x = pos.x / tile_width;
-    tile_coords.y = pos.y / tile_height;
+    tile_coords.x = floor(pos.x / tile_width);
+    tile_coords.y = floor(pos.y / tile_height);
     return tile_coords;
   }
   

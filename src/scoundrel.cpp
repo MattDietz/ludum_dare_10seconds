@@ -63,8 +63,8 @@ int simple_map[20][20] = {
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+  0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  3,3,3,3,3,3,1,3,3,3,3,3,3,3,3,3,3,3,3,3,
   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 };
@@ -212,17 +212,24 @@ void check_and_move_camera() {
   }
 }
 
-bool player_collide_vertical(Point left, Point right) {
-  Point player_tile_left = tile_helper.toTileCoords(left);
+bool player_collide_top(Point left, Point right, Point left_delta, Point right_delta) {
+  Point player_tile_left = tile_helper.toTileCoords(left_delta);
   if (player_tile_left.y < 0 || player_tile_left.y >= MAP_HEIGHT)
     return true;
 
-  Point player_tile_right = tile_helper.toTileCoords(right);
+  Point player_tile_right = tile_helper.toTileCoords(right_delta);
 
   for (int i = (int)player_tile_left.x; i <= (int)player_tile_right.x; ++i) {
-    if (!game_map[i][int(player_tile_left.y)]->passable()) {
-      int ptl = (int) player_tile_left.y;
+    int ptl = (int)player_tile_left.y;
+    if (!game_map[i][ptl]->passable()) {
+      sf::Vector2f player_movement = player->get_movement();
       Point tile_world = tile_helper.fromTileCoords(i, ptl); 
+      float delta_y = float(left.y - tile_world.y - TILE_HEIGHT);
+      if (delta_y == -1.f) {
+        player->set_movement(player_movement.x, 0);
+      } else if ((-delta_y) >= player_movement.y) {
+        player->set_movement(player_movement.x, -delta_y);
+      }
       return true;
     }
   }
@@ -237,10 +244,10 @@ bool player_collide_bottom(Point left, Point right, Point left_delta, Point righ
   Point player_tile_right = tile_helper.toTileCoords(right_delta);
 
   for (int i = (int)player_tile_left.x; i <= (int)player_tile_right.x; ++i) {
-    if (!game_map[i][int(player_tile_left.y)]->passable()) {
+    int ptl = (int) player_tile_left.y;
+    if (!game_map[i][ptl]->passable()) {
       sf::Vector2f player_movement = player->get_movement();
-      int ptl = (int) player_tile_left.y;
-      Point tile_world = tile_helper.fromTileCoords(i, ptl); 
+      Point tile_world = tile_helper.fromTileCoords(i, ptl);
       float delta_y = float(tile_world.y - left.y);
       /*
        * Three states:
@@ -268,14 +275,46 @@ bool player_collide_bottom(Point left, Point right, Point left_delta, Point righ
   return false;
 }
 
-bool player_collide_horizontal(Point top, Point bottom) {
-  Point player_tile_top = tile_helper.toTileCoords(top);
+bool player_collide_left(Point top, Point bottom, Point top_delta, Point bottom_delta) {
+  Point player_tile_top = tile_helper.toTileCoords(top_delta);
+  if (player_tile_top.x < 0)
+    return true;
+
+  Point player_tile_bottom = tile_helper.toTileCoords(bottom_delta);
+  for (int i = (int)player_tile_top.y; i <= (int)player_tile_bottom.y; ++i) {
+    int ptt = (int)player_tile_top.x;
+    if (!game_map[ptt][i]->passable()) {
+      sf::Vector2f player_movement = player->get_movement();
+      Point tile_world = tile_helper.fromTileCoords(ptt, i);
+      float delta_x = float(top.x - (tile_world.x + TILE_WIDTH));
+      if (delta_x == 0.f) {
+        player->set_movement(0, player_movement.y);
+      } else if (delta_x > 0.f && -delta_x >= player_movement.x) {
+        player->set_movement(delta_x - 1, player_movement.y);
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+bool player_collide_right(Point top, Point bottom, Point top_delta, Point bottom_delta) {
+  Point player_tile_top = tile_helper.toTileCoords(top_delta);
   if (player_tile_top.x < 0 || player_tile_top.x >= MAP_WIDTH)
     return true;
 
-  Point player_tile_bottom = tile_helper.toTileCoords(bottom);
+  Point player_tile_bottom = tile_helper.toTileCoords(bottom_delta);
   for (int i = (int)player_tile_top.y; i <= (int)player_tile_bottom.y; ++i) {
-    if (!game_map[int(player_tile_top.x)][i]->passable()) {
+    int ptt = (int)player_tile_top.x;
+    if (!game_map[ptt][i]->passable()) {
+      sf::Vector2f player_movement = player->get_movement();
+      Point tile_world = tile_helper.fromTileCoords(ptt, i);
+      float delta_x = float(tile_world.x - top.x);
+      if (delta_x == 0.f) {
+        player->set_movement(0, player_movement.y);
+      } else if (delta_x > 0.f && -delta_x >= player_movement.x) {
+        player->set_movement(delta_x - 1, player_movement.y);
+      }
       return true;
     }
   }
@@ -290,9 +329,9 @@ void player_move_up(float delta) {
   Point player_delta_left(player_left_coords.x, player_left_coords.y + delta);
   Point player_delta_right(player_right_coords.x, player_right_coords.y + delta);
 
-  if (player_collide_vertical(player_delta_left, player_delta_right)) {
-    sf::Vector2f move = player->get_movement();
-    player->apply_movement(0, -move.y);
+  if (player_collide_top(player_left_coords, player_right_coords, player_delta_left, player_delta_right)) {
+    //sf::Vector2f move = player->get_movement();
+    //player->apply_movement(0, -move.y);
   }
   check_and_move_camera();
 }
@@ -321,9 +360,9 @@ void player_move_left(float delta) {
   Point player_delta_top(player_top_coords.x + delta, player_top_coords.y);
   Point player_delta_bottom(player_bottom_coords.x + delta, player_bottom_coords.y);
 
-  if (player_collide_horizontal(player_delta_top, player_delta_bottom)) {
-    sf::Vector2f move = player->get_movement();
-    player->apply_movement(-move.x, 0);
+  if (player_collide_left(player_top_coords, player_bottom_coords, player_delta_top, player_delta_bottom)) {
+    //sf::Vector2f move = player->get_movement();
+    //player->apply_movement(-move.x, 0);
   }
   check_and_move_camera();
 }
@@ -336,7 +375,7 @@ void player_move_right(float delta) {
   Point player_delta_top(player_top_coords.x + delta, player_top_coords.y);
   Point player_delta_bottom(player_bottom_coords.x + delta, player_bottom_coords.y);
 
-  if (player_collide_horizontal(player_delta_top, player_delta_bottom)) {
+  if (player_collide_right(player_top_coords, player_bottom_coords, player_delta_top, player_delta_bottom)) {
     sf::Vector2f move = player->get_movement();
     player->apply_movement(-move.x, 0);
   }
