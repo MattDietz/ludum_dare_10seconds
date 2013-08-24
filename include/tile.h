@@ -4,6 +4,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 
+#include "animation.h"
 #include "scoundrel_utils.h"
 
 
@@ -11,13 +12,14 @@ class Tile {
   /* Represents an individual tile in a map */
 public:
   Tile();
-  Tile(sf::Sprite* sprite, int index_x, int index_y);
+  Tile(Animation* animation);
   void draw(sf::RenderWindow* window, Point position);
+  void set_animation(Animation* animation);
   void set_passable(bool state);
   bool passable();
 
 private:
-  sf::Sprite* texture;
+  Animation* _animation;
   bool _passable;
   //TODO: consider replacing with pointer back to the array later, or both
   int index_x, index_y; // reverse indices into the map

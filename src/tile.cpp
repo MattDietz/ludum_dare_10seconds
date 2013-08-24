@@ -4,16 +4,17 @@ Tile::Tile() {
   _passable = true;
 }
 
-Tile::Tile(sf::Sprite* sprite, int index_x, int index_y) {
-  texture = sprite;
-  index_x = index_x;
-  index_y = index_y;
-  _passable = true;
+Tile::Tile(Animation* animation) {
+  _animation = animation;
+}
+
+void Tile::set_animation(Animation* animation) {
+  _animation = animation;
 }
 
 void Tile::draw(sf::RenderWindow* window, Point position) {
-  texture->setPosition(position.x, position.y);
-  window->draw(*texture);
+  _animation->setPosition(position.x, position.y);
+  window->draw(*_animation);
 }
 
 void Tile::set_passable(bool state) {

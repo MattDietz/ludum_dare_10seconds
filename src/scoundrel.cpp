@@ -22,6 +22,7 @@ const float TERMINAL_VELOCITY = 15.f;
 const int MAP_WIDTH = 20, MAP_HEIGHT = 20;
 const int TILE_WIDTH = 32, TILE_HEIGHT = 32;
 const int FRAMERATE_LIMIT = 60;
+const int NUM_ANIMATIONS=20;
 
 // Impleent a camera/view class
 int WINDOW_WIDTH, WINDOW_HEIGHT;
@@ -30,6 +31,7 @@ const float CAMERA_SNAP_X = 0.2f, CAMERA_SNAP_Y = 0.15f;
 Tile*** game_map; //OH GOD
 sf::Sprite* sprites;
 sf::Texture* textures;
+sf::Texture tile_sheet;
 
 Player* player;
 KeyState key_state;
@@ -38,6 +40,7 @@ sf::Font game_font;
 sf::Clock fps_clock;
 sf::SoundBuffer* sound_buffers;
 sf::Sound* sounds;
+Animation* animations;
 
 float framerate = 0.f;
 bool show_fps = false;
@@ -66,18 +69,11 @@ void init_map()
   for (int i=0; i <MAP_WIDTH; ++i) {
     game_map[i] = new Tile*[MAP_HEIGHT];
     for (int j=0; j < MAP_HEIGHT; j++) {
-      Tile* tile = new Tile(&sprites[0], i, j);
-      game_map[i][j] = tile;
+      int rand_tile = rand() % 2;
+      game_map[i][j] = new Tile(&animations[rand_tile]);
+      game_map[i][j]->set_passable(true);
     }
   }
-
-  delete game_map[18][18];
-  game_map[18][18] = new Tile(&sprites[2], 18, 18);
-  game_map[18][18]->set_passable(false);
-
-  delete game_map[16][17];
-  game_map[16][17] = new Tile(&sprites[2], 18, 18);
-  game_map[16][17]->set_passable(false);
 }
 
 void unload_map() {
@@ -91,6 +87,21 @@ sf::RenderWindow* init_sfml() {
   sf::RenderWindow* game_window = new sf::RenderWindow();
   game_window->create(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Scoundrel");
   return game_window;
+}
+
+void init_tile_animations() {
+  tile_sheet = load_image("content/tile_sheet.png");
+  animations = new Animation[NUM_ANIMATIONS];
+
+  //Rock 1 Tile
+  animations[0].set_sprite_sheet(&tile_sheet);
+  animations[0].add_frame(sf::IntRect(32, 0, 32, 32));
+  animations[0].set_frame(0);
+
+  //Rock 2 Tile
+  animations[1].set_sprite_sheet(&tile_sheet);
+  animations[1].add_frame(sf::IntRect(64, 0, 32, 32));
+  animations[1].set_frame(0);
 }
 
 void init_graphics() {
@@ -107,6 +118,8 @@ void init_graphics() {
 
   textures[3] = load_image("content/player.png");
   sprites[3].setTexture(textures[3]);
+
+  init_tile_animations();
 }
 
 void init_audio() {
@@ -140,6 +153,7 @@ void deinitialize_game(sf::RenderWindow* window) {
   delete[] sprites;
   delete[] sound_buffers;
   delete[] sounds;
+  delete[] animations;
 }
 
 void check_and_move_camera() {
@@ -276,6 +290,8 @@ void player_move() {
   player_move = player->get_movement();
   if (player_move.x == 0.f && player_move.y == 0.f)
     player->set_state(ENTITY_STANDING);
+  if (player_move.y != 0.f)
+    player->set_state(ENTITY_JUMPING); //technically falling
 
   player->move(Point(player_move.x, player_move.y));
 }
@@ -394,7 +410,6 @@ void game_loop(sf::RenderWindow* window) {
       for (int j=draw_start.x-1; j < draw_end.x+1; ++j) {
         if (j < 0 || j == MAP_WIDTH)
           continue;
-        
         game_map[j][i]->draw(window, Point(j * TILE_WIDTH - camera_pos.x, i * TILE_HEIGHT - camera_pos.y));
       }
     }
