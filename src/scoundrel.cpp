@@ -16,12 +16,12 @@
 #include "tile_helper.h"
 
 //TODO: move away from all the globals. 
-const int WALK = 1;
-const int MAX_WALK = 4;
+const float WALK = 1;
+const float MAX_WALK = 4;
 const int MOVE_DELTA = MAX_WALK;
-const float JUMP_SPEED = -30.0f;
+const float JUMP_SPEED = -18.0f;
 
-const float GRAVITY = 3.f;
+const float GRAVITY = 2.f;
 const float TERMINAL_VELOCITY = 15.f;
 const int MAP_WIDTH = 20, MAP_HEIGHT = 20;
 const int TILE_WIDTH = 32, TILE_HEIGHT = 32;
@@ -61,8 +61,8 @@ int simple_map[20][20] = {
   0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,
   0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,
   3,3,3,3,3,3,1,3,3,3,3,3,3,3,3,3,3,3,3,3,
   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -168,8 +168,7 @@ void init_game()
   init_graphics();
   init_audio();
 
-  //TODO Make this go away
-  player = new Player(&sprites[3], Point(300, 300), Rectangle(2, 4, 24, 30));
+  player = new Player(&sprites[3], Point(300, 300), Rectangle(2, 4, 28, 30));
   player->set_walk_speed(WALK, MAX_WALK);
   player->set_movement(0, 0);
   player->set_fall_speed(GRAVITY, TERMINAL_VELOCITY);
@@ -212,10 +211,13 @@ void check_and_move_camera() {
   }
 }
 
-bool player_collide_top(Point left, Point right, Point left_delta, Point right_delta) {
+void player_collide_top(Point left, Point right, Point left_delta, Point right_delta) {
   Point player_tile_left = tile_helper.toTileCoords(left_delta);
-  if (player_tile_left.y < 0 || player_tile_left.y >= MAP_HEIGHT)
-    return true;
+  if (player_tile_left.y < 0) {
+    sf::Vector2f player_movement = player->get_movement();
+    player->set_movement(player_movement.x, 0);
+    return;
+  }
 
   Point player_tile_right = tile_helper.toTileCoords(right_delta);
 
@@ -230,19 +232,19 @@ bool player_collide_top(Point left, Point right, Point left_delta, Point right_d
       } else if ((-delta_y) >= player_movement.y) {
         player->set_movement(player_movement.x, -delta_y);
       }
-      return true;
     }
   }
-  return false;
 }
 
-bool player_collide_bottom(Point left, Point right, Point left_delta, Point right_delta) {
+void player_collide_bottom(Point left, Point right, Point left_delta, Point right_delta) {
   Point player_tile_left = tile_helper.toTileCoords(left_delta);
-  if (player_tile_left.y < 0 || player_tile_left.y >= MAP_HEIGHT)
-    return true;
+  if (player_tile_left.y >= MAP_HEIGHT) {
+    sf::Vector2f player_movement = player->get_movement();
+    player->set_movement(player_movement.x, 0);
+    return;
+  }
 
   Point player_tile_right = tile_helper.toTileCoords(right_delta);
-
   for (int i = (int)player_tile_left.x; i <= (int)player_tile_right.x; ++i) {
     int ptl = (int) player_tile_left.y;
     if (!game_map[i][ptl]->passable()) {
@@ -269,16 +271,17 @@ bool player_collide_bottom(Point left, Point right, Point left_delta, Point righ
       } else {
         player->set_state(ENTITY_JUMPING);
       }
-      return true;
     }
   }
-  return false;
 }
 
-bool player_collide_left(Point top, Point bottom, Point top_delta, Point bottom_delta) {
+void player_collide_left(Point top, Point bottom, Point top_delta, Point bottom_delta) {
   Point player_tile_top = tile_helper.toTileCoords(top_delta);
-  if (player_tile_top.x < 0)
-    return true;
+  if (player_tile_top.x < 0) {
+    sf::Vector2f player_movement = player->get_movement();
+    player->set_movement(0, player_movement.y);
+    return;
+  }
 
   Point player_tile_bottom = tile_helper.toTileCoords(bottom_delta);
   for (int i = (int)player_tile_top.y; i <= (int)player_tile_bottom.y; ++i) {
@@ -287,21 +290,22 @@ bool player_collide_left(Point top, Point bottom, Point top_delta, Point bottom_
       sf::Vector2f player_movement = player->get_movement();
       Point tile_world = tile_helper.fromTileCoords(ptt, i);
       float delta_x = float(top.x - (tile_world.x + TILE_WIDTH));
-      if (delta_x == 0.f) {
+      if (delta_x <= 0.f) {
         player->set_movement(0, player_movement.y);
       } else if (delta_x > 0.f && -delta_x >= player_movement.x) {
-        player->set_movement(delta_x - 1, player_movement.y);
+        player->set_movement(-delta_x + 1, player_movement.y);
       }
-      return true;
     }
   }
-  return false;
 }
 
-bool player_collide_right(Point top, Point bottom, Point top_delta, Point bottom_delta) {
+void player_collide_right(Point top, Point bottom, Point top_delta, Point bottom_delta) {
   Point player_tile_top = tile_helper.toTileCoords(top_delta);
-  if (player_tile_top.x < 0 || player_tile_top.x >= MAP_WIDTH)
-    return true;
+  if (player_tile_top.x >= MAP_WIDTH) {
+    sf::Vector2f player_movement = player->get_movement();
+    player->set_movement(0, player_movement.y);
+    return;
+  }
 
   Point player_tile_bottom = tile_helper.toTileCoords(bottom_delta);
   for (int i = (int)player_tile_top.y; i <= (int)player_tile_bottom.y; ++i) {
@@ -310,15 +314,14 @@ bool player_collide_right(Point top, Point bottom, Point top_delta, Point bottom
       sf::Vector2f player_movement = player->get_movement();
       Point tile_world = tile_helper.fromTileCoords(ptt, i);
       float delta_x = float(tile_world.x - top.x);
-      if (delta_x == 0.f) {
+      if (delta_x <= 0.f) {
         player->set_movement(0, player_movement.y);
-      } else if (delta_x > 0.f && -delta_x >= player_movement.x) {
+      } else if (delta_x > 0.f && delta_x > player_movement.x) {
         player->set_movement(delta_x - 1, player_movement.y);
       }
-      return true;
+      return;
     }
   }
-  return false;
 }
 
 void player_move_up(float delta) {
@@ -329,11 +332,7 @@ void player_move_up(float delta) {
   Point player_delta_left(player_left_coords.x, player_left_coords.y + delta);
   Point player_delta_right(player_right_coords.x, player_right_coords.y + delta);
 
-  if (player_collide_top(player_left_coords, player_right_coords, player_delta_left, player_delta_right)) {
-    //sf::Vector2f move = player->get_movement();
-    //player->apply_movement(0, -move.y);
-  }
-  check_and_move_camera();
+  player_collide_top(player_left_coords, player_right_coords, player_delta_left, player_delta_right);
 }
 
 void player_move_down(float delta) {
@@ -344,12 +343,7 @@ void player_move_down(float delta) {
   Point player_delta_left(player_left_coords.x, player_left_coords.y + delta);
   Point player_delta_right(player_right_coords.x, player_right_coords.y + delta);
 
-  if (player_collide_bottom(player_left_coords, player_right_coords, player_delta_left, player_delta_right)) {
-    //sf::Vector2f move = player->get_movement();
-    //player->apply_movement(0, -move.y);
-    //player->unset_state(ENTITY_JUMPING);
-  }
-  check_and_move_camera();
+  player_collide_bottom(player_left_coords, player_right_coords, player_delta_left, player_delta_right);
 }
 
 void player_move_left(float delta) {
@@ -360,11 +354,7 @@ void player_move_left(float delta) {
   Point player_delta_top(player_top_coords.x + delta, player_top_coords.y);
   Point player_delta_bottom(player_bottom_coords.x + delta, player_bottom_coords.y);
 
-  if (player_collide_left(player_top_coords, player_bottom_coords, player_delta_top, player_delta_bottom)) {
-    //sf::Vector2f move = player->get_movement();
-    //player->apply_movement(-move.x, 0);
-  }
-  check_and_move_camera();
+  player_collide_left(player_top_coords, player_bottom_coords, player_delta_top, player_delta_bottom);
 }
 
 void player_move_right(float delta) {
@@ -375,11 +365,7 @@ void player_move_right(float delta) {
   Point player_delta_top(player_top_coords.x + delta, player_top_coords.y);
   Point player_delta_bottom(player_bottom_coords.x + delta, player_bottom_coords.y);
 
-  if (player_collide_right(player_top_coords, player_bottom_coords, player_delta_top, player_delta_bottom)) {
-    sf::Vector2f move = player->get_movement();
-    player->apply_movement(-move.x, 0);
-  }
-  check_and_move_camera();
+  player_collide_right(player_top_coords, player_bottom_coords, player_delta_top, player_delta_bottom);
 }
 
 void player_move() {
