@@ -16,7 +16,10 @@
 #include "tile_helper.h"
 
 //TODO: move away from all the globals. 
-const int MOVE_DELTA = 4;
+const int WALK = 1;
+const int MAX_WALK = 4;
+const int MOVE_DELTA = MAX_WALK;
+
 const float GRAVITY = 3.f;
 const float TERMINAL_VELOCITY = 15.f;
 const int MAP_WIDTH = 20, MAP_HEIGHT = 20;
@@ -42,12 +45,35 @@ sf::SoundBuffer* sound_buffers;
 sf::Sound* sounds;
 Animation* animations;
 
+int simple_map[20][20] = {
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+  2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+};
+
 float framerate = 0.f;
 bool show_fps = false;
 TileHelper tile_helper(TILE_WIDTH, TILE_HEIGHT);
 
 void load_config() {
-  configlib::configfile config("scoundrel.conf");
+  configlib::configfile config("10second.conf");
   configlib::configitem<int> window_width(config, "main", "int window_width", "height=", 1024);
   configlib::configitem<int> window_height(config, "main", "int window_height", "width=", 768);
   config.read();
@@ -69,9 +95,11 @@ void init_map()
   for (int i=0; i <MAP_WIDTH; ++i) {
     game_map[i] = new Tile*[MAP_HEIGHT];
     for (int j=0; j < MAP_HEIGHT; j++) {
-      int rand_tile = rand() % 2;
-      game_map[i][j] = new Tile(&animations[rand_tile]);
-      game_map[i][j]->set_passable(true);
+      int map_tile = simple_map[j][i];
+      if (map_tile > 0) {
+        game_map[i][j] = new Tile(&animations[map_tile], false);
+      } else
+        game_map[i][j] = new Tile();
     }
   }
 }
@@ -102,6 +130,11 @@ void init_tile_animations() {
   animations[1].set_sprite_sheet(&tile_sheet);
   animations[1].add_frame(sf::IntRect(64, 0, 32, 32));
   animations[1].set_frame(0);
+
+  //Rock 1 Ground
+  animations[2].set_sprite_sheet(&tile_sheet);
+  animations[2].add_frame(sf::IntRect(224, 0, 32, 32));
+  animations[2].set_frame(0);
 }
 
 void init_graphics() {
@@ -136,7 +169,7 @@ void init_game()
 
   //TODO Make this go away
   player = new Player(&sprites[3], Point(300, 300), Rectangle(2, 4, 24, 30));
-  player->set_walk_speed(MOVE_DELTA);
+  player->set_walk_speed(WALK, MAX_WALK);
   player->set_movement(0, 0);
   player->set_fall_speed(GRAVITY, TERMINAL_VELOCITY);
 
@@ -197,13 +230,12 @@ bool player_collide_horizontal(Point top, Point bottom) {
     return true;
 
   Point player_tile_bottom = tile_helper.toTileCoords(bottom);
-  bool player_collision = false;
   for (int i = (int)player_tile_top.y; i <= (int)player_tile_bottom.y; ++i) {
     if (!game_map[int(player_tile_top.x)][i]->passable()) {
-      player_collision = true;
+      return true;
     }
   }
-  return player_collision;
+  return false;
 }
 
 void player_move_up(float delta) {
@@ -218,8 +250,6 @@ void player_move_up(float delta) {
     sf::Vector2f move = player->get_movement();
     player->apply_movement(0, -move.y);
   }
-
-  //player->move(0, delta);
   check_and_move_camera();
 }
 
@@ -236,8 +266,6 @@ void player_move_down(float delta) {
     player->apply_movement(0, -move.y);
     player->unset_state(ENTITY_JUMPING);
   }
-
-  //player->move(0, delta);
   check_and_move_camera();
 }
 
@@ -268,8 +296,6 @@ void player_move_right(float delta) {
     sf::Vector2f move = player->get_movement();
     player->apply_movement(-move.x, 0);
   }
-
-  //player->move(delta, 0);
   check_and_move_camera();
 }
 
@@ -345,12 +371,9 @@ void handle_events(sf::RenderWindow* window) {
   if (key_state.space_pressed)
     player->jump(-30.0f);
 
-  if (!key_state.left_pressed && !key_state.right_pressed && (key_state.left_was_pressed || key_state.right_was_pressed)) {
+  if (!key_state.left_pressed && !key_state.right_pressed) {
     player->stop_walking();
-    key_state.left_was_pressed = false;
-    key_state.right_was_pressed = false;
   }
-
 }
 
 void handle_ai() {

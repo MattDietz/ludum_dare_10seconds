@@ -28,7 +28,7 @@ public:
   void unset_state(int state);
 
   //Player walk handlers
-  void set_walk_speed(float magnitude);
+  void set_walk_speed(float walk, float max_walk);
   void walk_left();
   void walk_right();
   void stop_walking();
@@ -43,7 +43,7 @@ private:
   int _state;
   sf::Sprite* _sprite;
   Rectangle _bounding_rect;
-  float _max_walk;
+  float _walk, _max_walk;
   float _fall_speed, _max_fall_speed;
 };
 

@@ -11,8 +11,8 @@
 class Tile {
   /* Represents an individual tile in a map */
 public:
-  Tile();
-  Tile(Animation* animation);
+  Tile(bool passable=true);
+  Tile(Animation* animation, bool passable=true);
   void draw(sf::RenderWindow* window, Point position);
   void set_animation(Animation* animation);
   void set_passable(bool state);

@@ -1,11 +1,13 @@
 #include "tile.h"
 
-Tile::Tile() {
-  _passable = true;
+Tile::Tile(bool passable) {
+  _animation = NULL;
+  _passable = passable;
 }
 
-Tile::Tile(Animation* animation) {
+Tile::Tile(Animation* animation, bool passable) {
   _animation = animation;
+  _passable = passable;
 }
 
 void Tile::set_animation(Animation* animation) {
@@ -13,8 +15,10 @@ void Tile::set_animation(Animation* animation) {
 }
 
 void Tile::draw(sf::RenderWindow* window, Point position) {
-  _animation->setPosition(position.x, position.y);
-  window->draw(*_animation);
+  if (_animation) {
+    _animation->setPosition(position.x, position.y);
+    window->draw(*_animation);
+  }
 }
 
 void Tile::set_passable(bool state) {

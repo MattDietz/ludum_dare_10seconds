@@ -51,33 +51,43 @@ void Player::unset_state(int state) {
   _state &= ~state;
 }
 
-void Player::set_walk_speed(float magnitude) {
-  _max_walk = abs(magnitude);
+void Player::set_walk_speed(float walk, float max_walk) {
+  _walk = abs(walk);
+  _max_walk = abs(max_walk);
 }
 
 void Player::walk_left() {
-  apply_movement(-_max_walk, 0);
+  apply_movement(-_walk, 0);
   if (_movement.x < -_max_walk)
     set_movement(-_max_walk, _movement.y);
   set_state(ENTITY_WALKING);
 }
 
 void Player::walk_right() {
-  apply_movement(_max_walk, 0);
+  apply_movement(_walk, 0);
   if (_movement.x >_max_walk)
     set_movement(_max_walk, _movement.y);
   set_state(ENTITY_WALKING);
 }
 
 void Player::stop_walking() {
-  if (_movement.x < 0)
-    apply_movement(_max_walk, 0);
-  else
-    apply_movement(-_max_walk, 0);
-  if (round(_movement.x) == 0.f)
-    set_movement(0.f, _movement.y);
+  //Decelerate
+  if (_state == ENTITY_WALKING) {
+    if (_movement.x < 0) {
+      apply_movement(_walk, 0);
+      if (_movement.x > 0)
+        set_movement(0, _movement.y);
+    } else if (_movement.x > 0) {
+      apply_movement(-_walk, 0);
+      if (_movement.x < 0)
+        set_movement(0, _movement.y);
+    }
 
-  unset_state(ENTITY_WALKING);
+    if (round(_movement.x) == 0.f) {
+      set_movement(0.f, _movement.y);
+      unset_state(ENTITY_WALKING);
+    }
+  }
 }
 
 void Player::fall() {
