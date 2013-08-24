@@ -16,8 +16,10 @@
 #include "tile_helper.h"
 
 //TODO: move away from all the globals. 
-const int MOVE_DELTA = 2;
-const int MAP_WIDTH = 100, MAP_HEIGHT = 100;
+const int MOVE_DELTA = 4;
+const float GRAVITY = 3.f;
+const float TERMINAL_VELOCITY = 15.f;
+const int MAP_WIDTH = 20, MAP_HEIGHT = 20;
 const int TILE_WIDTH = 32, TILE_HEIGHT = 32;
 const int FRAMERATE_LIMIT = 60;
 
@@ -36,12 +38,6 @@ sf::Font game_font;
 sf::Clock fps_clock;
 sf::SoundBuffer* sound_buffers;
 sf::Sound* sounds;
-
-Animation fire_animation;
-struct Fire {
-  Point position;
-};
-Fire fires[100];
 
 float framerate = 0.f;
 bool show_fps = false;
@@ -70,20 +66,18 @@ void init_map()
   for (int i=0; i <MAP_WIDTH; ++i) {
     game_map[i] = new Tile*[MAP_HEIGHT];
     for (int j=0; j < MAP_HEIGHT; j++) {
-      int rand_tile = rand() % 3;
-      Tile* tile = new Tile(&sprites[rand_tile], i, j);
-      if (rand_tile == 2)
-        tile->set_passable(false);
+      Tile* tile = new Tile(&sprites[0], i, j);
       game_map[i][j] = tile;
     }
   }
 
-  //Generate some fires
-  for (int i = 0; i < 100; ++i) {
-    int x = rand() % MAP_WIDTH * TILE_WIDTH;
-    int y = rand() % MAP_HEIGHT * TILE_HEIGHT;
-    fires[i].position = Point(x, y);
-  }
+  delete game_map[18][18];
+  game_map[18][18] = new Tile(&sprites[2], 18, 18);
+  game_map[18][18]->set_passable(false);
+
+  delete game_map[16][17];
+  game_map[16][17] = new Tile(&sprites[2], 18, 18);
+  game_map[16][17]->set_passable(false);
 }
 
 void unload_map() {
@@ -113,15 +107,6 @@ void init_graphics() {
 
   textures[3] = load_image("content/player.png");
   sprites[3].setTexture(textures[3]);
-
-  textures[4] = load_image("content/fire_sheet.png");
-  sprites[4].setTexture(textures[4]);
-  fire_animation.set_sprite_sheet(&textures[4]);
-  fire_animation.add_frame(sf::IntRect(0, 0, 31, 31));
-  fire_animation.add_frame(sf::IntRect(33, 0, 63, 31));
-  fire_animation.set_frame(0);
-
-  game_font.loadFromFile("content/mensch.ttf");
 }
 
 void init_audio() {
@@ -138,6 +123,9 @@ void init_game()
 
   //TODO Make this go away
   player = new Player(&sprites[3], Point(300, 300), Rectangle(2, 4, 24, 30));
+  player->set_walk_speed(MOVE_DELTA);
+  player->set_movement(0, 0);
+  player->set_fall_speed(GRAVITY, TERMINAL_VELOCITY);
 
   camera.set_absolute(0, 0);
   camera.set_window_size(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -204,7 +192,7 @@ bool player_collide_horizontal(Point top, Point bottom) {
   return player_collision;
 }
 
-void player_move_up(int delta) {
+void player_move_up(float delta) {
   Rectangle player_rect = player->get_bounding_rect();
 
   Point player_left_coords(player_rect.left(), player_rect.top());
@@ -212,14 +200,16 @@ void player_move_up(int delta) {
   Point player_delta_left(player_left_coords.x, player_left_coords.y + delta);
   Point player_delta_right(player_right_coords.x, player_right_coords.y + delta);
 
-  if (player_collide_vertical(player_delta_left, player_delta_right))
-    return;
+  if (player_collide_vertical(player_delta_left, player_delta_right)) {
+    sf::Vector2f move = player->get_movement();
+    player->apply_movement(0, -move.y);
+  }
 
-  player->move(0, delta);
+  //player->move(0, delta);
   check_and_move_camera();
 }
 
-void player_move_down(int delta) {
+void player_move_down(float delta) {
   Rectangle player_rect = player->get_bounding_rect();
 
   Point player_left_coords(player_rect.left(), player_rect.bottom());
@@ -227,14 +217,17 @@ void player_move_down(int delta) {
   Point player_delta_left(player_left_coords.x, player_left_coords.y + delta);
   Point player_delta_right(player_right_coords.x, player_right_coords.y + delta);
 
-  if (player_collide_vertical(player_delta_left, player_delta_right))
-    return;
+  if (player_collide_vertical(player_delta_left, player_delta_right)) {
+    sf::Vector2f move = player->get_movement();
+    player->apply_movement(0, -move.y);
+    player->unset_state(ENTITY_JUMPING);
+  }
 
-  player->move(0, delta);
+  //player->move(0, delta);
   check_and_move_camera();
 }
 
-void player_move_left(int delta) {
+void player_move_left(float delta) {
   Rectangle player_rect = player->get_bounding_rect();
 
   Point player_top_coords(player_rect.left(), player_rect.top());
@@ -242,14 +235,14 @@ void player_move_left(int delta) {
   Point player_delta_top(player_top_coords.x + delta, player_top_coords.y);
   Point player_delta_bottom(player_bottom_coords.x + delta, player_bottom_coords.y);
 
-  if (player_collide_horizontal(player_delta_top, player_delta_bottom))
-    return;
-
-  player->move(delta, 0);
+  if (player_collide_horizontal(player_delta_top, player_delta_bottom)) {
+    sf::Vector2f move = player->get_movement();
+    player->apply_movement(-move.x, 0);
+  }
   check_and_move_camera();
 }
 
-void player_move_right(int delta) {
+void player_move_right(float delta) {
   Rectangle player_rect = player->get_bounding_rect();
 
   Point player_top_coords(player_rect.right(), player_rect.top());
@@ -257,29 +250,50 @@ void player_move_right(int delta) {
   Point player_delta_top(player_top_coords.x + delta, player_top_coords.y);
   Point player_delta_bottom(player_bottom_coords.x + delta, player_bottom_coords.y);
 
-  if (player_collide_horizontal(player_delta_top, player_delta_bottom))
-    return;
+  if (player_collide_horizontal(player_delta_top, player_delta_bottom)) {
+    sf::Vector2f move = player->get_movement();
+    player->apply_movement(-move.x, 0);
+  }
 
-  player->move(delta, 0);
+  //player->move(delta, 0);
   check_and_move_camera();
+}
+
+void player_move() {
+  player->fall();
+  sf::Vector2f player_move = player->get_movement();
+
+  if (player_move.x > 0)
+    player_move_right(player_move.x);
+  else if (player_move.x < 0)
+    player_move_left(player_move.x);
+
+  if (player_move.y > 0)
+    player_move_down(player_move.y);
+  else if (player_move.y < 0)
+    player_move_up(player_move.y);
+
+  player_move = player->get_movement();
+  if (player_move.x == 0.f && player_move.y == 0.f)
+    player->set_state(ENTITY_STANDING);
+
+  player->move(Point(player_move.x, player_move.y));
 }
 
 void handle_events(sf::RenderWindow* window) {
   sf::Event event;
-
   while (window->pollEvent(event)) {
     if (event.type == sf::Event::KeyPressed) {
-      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
         key_state.left_pressed = true;
-
-      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
+      } 
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
         key_state.right_pressed = true;
+      }
 
-      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-        key_state.up_pressed = true;
-
-      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-        key_state.down_pressed = true;
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
+        key_state.space_pressed = true;
+      }
 
       switch(event.key.code) {
         case sf::Keyboard::Escape:
@@ -290,17 +304,17 @@ void handle_events(sf::RenderWindow* window) {
           break;
       }
     } else if (event.type == sf::Event::KeyReleased) {
-      if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
+      if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
+        key_state.left_was_pressed = key_state.left_pressed;
         key_state.left_pressed = false;
-
-      if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
+      } 
+      if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
+        key_state.right_was_pressed = key_state.right_pressed;
         key_state.right_pressed = false;
-
-      if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-        key_state.up_pressed = false;
-
-      if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-        key_state.down_pressed = false;
+      }
+      if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
+        key_state.space_pressed = false;
+      }
     }
 
     if (event.type == sf::Event::Closed)
@@ -308,13 +322,19 @@ void handle_events(sf::RenderWindow* window) {
   }
 
   if (key_state.left_pressed)
-    player_move_left(-MOVE_DELTA);
+    player->walk_left();
   if (key_state.right_pressed)
-    player_move_right(MOVE_DELTA);
-  if (key_state.up_pressed)
-    player_move_up(-MOVE_DELTA);
-  if (key_state.down_pressed)
-    player_move_down(MOVE_DELTA);
+    player->walk_right();
+
+  if (key_state.space_pressed)
+    player->jump(-30.0f);
+
+  if (!key_state.left_pressed && !key_state.right_pressed && (key_state.left_was_pressed || key_state.right_was_pressed)) {
+    player->stop_walking();
+    key_state.left_was_pressed = false;
+    key_state.right_was_pressed = false;
+  }
+
 }
 
 void handle_ai() {
@@ -346,6 +366,11 @@ void game_loop(sf::RenderWindow* window) {
     handle_events(window);
     handle_ai();
 
+    //Replace later with all entity move
+    player_move();
+
+    check_and_move_camera();
+
     window->clear(sf::Color::Black);
     Point tile_start = tile_helper.toTileCoords(camera_pos);
 
@@ -373,25 +398,6 @@ void game_loop(sf::RenderWindow* window) {
         game_map[j][i]->draw(window, Point(j * TILE_WIDTH - camera_pos.x, i * TILE_HEIGHT - camera_pos.y));
       }
     }
-    for (int i = 0; i < 100; ++i) {
-      Point fire = fires[i].position;
-      fire.x -= camera_pos.x;
-      fire.y -= camera_pos.y;
-      fire_animation.setPosition(fire.x, fire.y);
-      window->draw(fire_animation);
-    }
-
-    //TODO: nuke this shortly. Move into the animation class
-    decay--;
-    if (decay == 0) {
-      int cur_frame = fire_animation.get_frame();
-      if (cur_frame == 0)
-        fire_animation.set_frame(1);
-      else
-        fire_animation.set_frame(0);
-      decay = 30;
-    }
-
     player->draw(window, camera_pos);
 
     if (show_fps)

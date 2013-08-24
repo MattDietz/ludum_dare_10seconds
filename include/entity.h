@@ -1,6 +1,7 @@
 #ifndef SCOUNDREL_ENTITY
 #define SCOUNDREL_ENTITY
 
+#include <SFML/System.hpp>
 #include <SFML/Window.hpp>
 
 #include "rect.h"
@@ -13,8 +14,12 @@ public:
   virtual Point position()=0;
   virtual void draw(sf::RenderWindow* window);
   virtual Rectangle get_bounding_rect()=0;
+  virtual void apply_movement(float mag_x, float mag_y);
+  virtual void set_movement(float mag_x, float mag_y);
+  virtual sf::Vector2f get_movement();
 
 protected:
+  sf::Vector2f _movement;
   Point _position;
   Point _size;
 };

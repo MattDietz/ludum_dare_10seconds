@@ -30,6 +30,69 @@ Point Player::position() {
   return _position;
 }
 
+void Player::set_fall_speed(float fall, float max_fall) {
+  _fall_speed = fall;
+  _max_fall_speed = max_fall;
+}
+
+int Player::get_state() {
+  return _state;
+}
+
+bool Player::is_state_set(int state) {
+  return _state & state;
+}
+
+void Player::set_state(int state) {
+  _state |= state;
+}
+
+void Player::unset_state(int state) {
+  _state &= ~state;
+}
+
+void Player::set_walk_speed(float magnitude) {
+  _max_walk = abs(magnitude);
+}
+
+void Player::walk_left() {
+  apply_movement(-_max_walk, 0);
+  if (_movement.x < -_max_walk)
+    set_movement(-_max_walk, _movement.y);
+  set_state(ENTITY_WALKING);
+}
+
+void Player::walk_right() {
+  apply_movement(_max_walk, 0);
+  if (_movement.x >_max_walk)
+    set_movement(_max_walk, _movement.y);
+  set_state(ENTITY_WALKING);
+}
+
+void Player::stop_walking() {
+  if (_movement.x < 0)
+    apply_movement(_max_walk, 0);
+  else
+    apply_movement(-_max_walk, 0);
+  if (round(_movement.x) == 0.f)
+    set_movement(0.f, _movement.y);
+
+  unset_state(ENTITY_WALKING);
+}
+
+void Player::fall() {
+  apply_movement(0, _fall_speed);
+  if (_movement.y > _max_fall_speed)
+    set_movement(_movement.x, _max_fall_speed);
+}
+
+void Player::jump(float magnitude) {
+  if (!is_state_set(ENTITY_JUMPING)) {
+    apply_movement(0.f, magnitude);
+    set_state(ENTITY_JUMPING);
+  }
+}
+
 Rectangle Player::get_bounding_rect() {
   float left = _position.x + _bounding_rect.left();
   float top = _position.y + _bounding_rect.top();

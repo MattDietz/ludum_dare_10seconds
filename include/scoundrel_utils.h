@@ -11,6 +11,12 @@ struct KeyState {
   bool right_pressed;
   bool up_pressed;
   bool down_pressed;
+  bool space_pressed;
+
+  bool left_was_pressed;
+  bool right_was_pressed;
+  bool up_was_pressed;
+  bool down_was_pressed;
 };
 
 #endif
