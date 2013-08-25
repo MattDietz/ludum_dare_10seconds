@@ -82,13 +82,11 @@ Tile*** load_map(std::string level_path, Player* player, Camera* camera, Animati
       }  else {
         game_map[index_x][index_y] = new Tile();
       }
-      std::cout << index_x << " ";
 
       index_x++;
       if (index_x == map_width) {
         index_x = 0;
         index_y++;
-        std::cout << std::endl;
       }
     }
   }

@@ -269,15 +269,15 @@ void check_and_move_camera() {
   cam_snap_vert = camera.point_snap_vertical(player_coords);
 
   if (cam_snap_horz == Camera::SNAP_LEFT) {
-    camera.move(-MOVE_DELTA, 0);
+    camera.move(player->get_movement().x, 0);
   } else if (cam_snap_horz == Camera::SNAP_RIGHT) {
-    camera.move(MOVE_DELTA, 0);
+    camera.move(player->get_movement().x, 0);
   }
 
   if (cam_snap_vert == Camera::SNAP_TOP) {
-    camera.move(0, -MOVE_DELTA);
+    camera.move(0, player->get_movement().y);
   } else if (cam_snap_vert == Camera::SNAP_BOTTOM) {
-    camera.move(0, MOVE_DELTA);
+    camera.move(0, player->get_movement().y);
   }
 }
 
