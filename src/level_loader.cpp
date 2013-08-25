@@ -53,8 +53,11 @@ Tile*** load_map(std::string level_path, Player* player, Camera* camera, Animati
     while (std::getline(line_stream, cell, ',')) {
       int map_tile = atoi(cell.c_str());
       if (map_tile == 4) {
-        //Floor spikes
+        //Floor Spikes
         game_map[index_x][index_y] = new Tile(&tile_animations[map_tile-1], false, true);
+      } else if (map_tile > 6 && map_tile < 10) {
+        //Other Spikes - Sloppy planning FTL
+        game_map[index_x][index_y] = new Tile(&tile_animations[map_tile - 3], false, true);
       } else if (map_tile == 5) {
         //Battery
         Battery* battery = new Battery(Rectangle(8, 8, 22, 28));

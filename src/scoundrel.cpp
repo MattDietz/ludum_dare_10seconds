@@ -119,6 +119,21 @@ void init_tile_animations() {
   tile_animations[3].add_frame(sf::IntRect(160, 0, 32, 32));
   tile_animations[3].set_frame(0);
 
+  //Ceiling Brown Spikes
+  tile_animations[4].set_sprite_sheet(&tile_sheet);
+  tile_animations[4].add_frame(sf::IntRect(0, 96, 32, 32));
+  tile_animations[4].set_frame(0);
+
+  //Right Facing Brown Spikes
+  tile_animations[5].set_sprite_sheet(&tile_sheet);
+  tile_animations[5].add_frame(sf::IntRect(32, 96, 32, 32));
+  tile_animations[5].set_frame(0);
+
+  //left Facing Brown Spikes
+  tile_animations[6].set_sprite_sheet(&tile_sheet);
+  tile_animations[6].add_frame(sf::IntRect(64, 96, 32, 32));
+  tile_animations[6].set_frame(0);
+
   //Player walk right
   animations[0].set_sprite_sheet(&tile_sheet);
   animations[0].add_frame(sf::IntRect(0, 32, 32, 32));
@@ -281,6 +296,10 @@ void player_collide_top(Point left, Point right, Point left_delta, Point right_d
         player->set_movement(player_movement.x, -delta_y);
       }
     }
+    if (game_map->get_tile(i, ptl)->is_deadly()) {
+      player->kill();
+      return;
+    }
   }
 }
 
@@ -321,7 +340,6 @@ void player_collide_bottom(Point left, Point right, Point left_delta, Point righ
       }
     }
     if (game_map->get_tile(i, ptl)->is_deadly()) {
-      std::cout << "Killed" << std::endl;
       player->kill();
       return;
     }
@@ -349,6 +367,10 @@ void player_collide_left(Point top, Point bottom, Point top_delta, Point bottom_
         player->set_movement(-delta_x + 1, player_movement.y);
       }
     }
+    if (game_map->get_tile(ptt, i)->is_deadly()) {
+      player->kill();
+      return;
+    }
   }
 }
 
@@ -372,6 +394,10 @@ void player_collide_right(Point top, Point bottom, Point top_delta, Point bottom
       } else if (delta_x > 0.f && delta_x > player_movement.x) {
         player->set_movement(delta_x - 1, player_movement.y);
       }
+      return;
+    }
+    if (game_map->get_tile(ptt, i)->is_deadly()) {
+      player->kill();
       return;
     }
   }
