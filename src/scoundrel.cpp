@@ -152,7 +152,7 @@ void init_tile_animations() {
   animations[1].set_sprite_sheet(&tile_sheet);
   animations[1].add_frame(sf::IntRect(96, 32, 32, 32));
   animations[1].add_frame(sf::IntRect(128, 32, 32, 32));
-  animations[1].add_frame(sf::IntRect(156, 32, 32, 32));
+  animations[1].add_frame(sf::IntRect(160, 32, 32, 32));
   animations[1].add_frame(sf::IntRect(128, 32, 32, 32));
   animations[1].set_frame_time(5);
   animations[1].set_frame(0);
@@ -384,7 +384,7 @@ void player_collide_left(Point top, Point bottom, Point top_delta, Point bottom_
       if (delta_x <= 0.f) {
         player->set_movement(0, player_movement.y);
       } else if (delta_x > 0.f && -delta_x >= player_movement.x) {
-        player->set_movement(-delta_x + 1, player_movement.y);
+        player->set_movement(0, player_movement.y);
       }
     }
   }
