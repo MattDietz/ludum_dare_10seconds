@@ -22,6 +22,10 @@ Point Battery::position() {
   return _position;
 }
 
+void Battery::set_pickup_sound(sf::Sound* sound) {
+  _pickup_sound = sound;
+}
+
 void Battery::set_position(float x, float y) {
   _position.x = x;
   _position.y = y;
@@ -37,5 +41,6 @@ Rectangle Battery::get_bounding_rect() {
 
 void Battery::perform_collision_action(Player* player, float& game_time) {
   game_time += 10.0f;
+  _pickup_sound->play();
   kill();
 }

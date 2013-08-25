@@ -18,13 +18,13 @@
 #include "tile_helper.h"
 
 //TODO: move away from all the globals. 
-const float WALK = 0.5f;
+const float WALK = 0.25f;
 const float MAX_WALK = 4.f;
 const float WALK_STOP = 1.2f;
 const int MOVE_DELTA = MAX_WALK;
-const float JUMP_SPEED = -20.0f;
+const float JUMP_SPEED = -18.5f;
 
-const float GRAVITY = 1.5f;
+const float GRAVITY = 1.6f;
 const float TERMINAL_VELOCITY = 15.f;
 const int MAP_WIDTH = 20, MAP_HEIGHT = 20;
 const int TILE_WIDTH = 32, TILE_HEIGHT = 32;
@@ -71,8 +71,8 @@ int simple_map[20][20] = {
   0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,
   0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  3,3,3,3,3,3,1,3,3,3,3,3,3,3,3,3,3,3,3,3,
-  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+  3,0,0,3,3,3,1,3,3,3,3,3,3,3,3,3,3,3,3,3,
+  1,4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 };
 
@@ -105,7 +105,12 @@ void init_map()
     for (int j=0; j < MAP_HEIGHT; j++) {
       int map_tile = simple_map[j][i];
       if (map_tile > 0) {
-        game_map[i][j] = new Tile(&tile_animations[map_tile-1], false);
+        if (map_tile == 4) {
+          //Spikes
+          game_map[i][j] = new Tile(&tile_animations[map_tile-1], false, true);
+        } else {
+          game_map[i][j] = new Tile(&tile_animations[map_tile-1], false);
+        }
       } else
         game_map[i][j] = new Tile();
     }
@@ -113,6 +118,7 @@ void init_map()
   Battery* battery = new Battery(Rectangle(8, 8, 22, 28));
   battery->set_frames(&animations[4]);
   battery->set_position(100, 400);
+  battery->set_pickup_sound(&sounds[1]);
   game_entities.push_back(battery);
 }
 
@@ -148,6 +154,11 @@ void init_tile_animations() {
   tile_animations[2].set_sprite_sheet(&tile_sheet);
   tile_animations[2].add_frame(sf::IntRect(224, 0, 32, 32));
   tile_animations[2].set_frame(0);
+
+  //Brown Spikes
+  tile_animations[3].set_sprite_sheet(&tile_sheet);
+  tile_animations[3].add_frame(sf::IntRect(160, 0, 32, 32));
+  tile_animations[3].set_frame(0);
 
   //Player walk right
   animations[0].set_sprite_sheet(&tile_sheet);
@@ -205,14 +216,17 @@ void init_graphics() {
 
   init_tile_animations();
 
-  game_font.loadFromFile("content/mensch.ttf");
+  game_font.loadFromFile("content/digital_tech.otf");
 }
 
 void init_audio() {
   sound_buffers = new sf::SoundBuffer[5];
   sounds = new sf::Sound[5];
-  sound_buffers[0].loadFromFile("content/pewpew.wav");
+  sound_buffers[0].loadFromFile("content/jump.wav");
   sounds[0].setBuffer(sound_buffers[0]);
+
+  sound_buffers[1].loadFromFile("content/battery.wav");
+  sounds[1].setBuffer(sound_buffers[1]);
 }
 
 void init_game()
@@ -322,7 +336,7 @@ void player_collide_bottom(Point left, Point right, Point left_delta, Point righ
        * Still falling -> do nothing
        * landed -> unset(ENTITY_JUMPING) - landed counts as 1 px above the tile
        */
-      if (delta_y == 1.f) {
+      if (delta_y <= 1.f) {
         player->unset_state(ENTITY_JUMPING);
         player->set_movement(player_movement.x, 0);
       } else if (delta_y > 1.f && delta_y <= player_movement.y) {
@@ -331,6 +345,11 @@ void player_collide_bottom(Point left, Point right, Point left_delta, Point righ
       } else {
         player->set_state(ENTITY_JUMPING);
       }
+    }
+    if (game_map[i][ptl]->is_deadly()) {
+      std::cout << "Killed" << std::endl;
+      player->kill();
+      return;
     }
   }
 }
@@ -483,6 +502,7 @@ void handle_events(sf::RenderWindow* window) {
       }
       if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
         key_state.space_pressed = false;
+        key_state.space_was_pressed = false;
       }
     }
 
@@ -495,8 +515,11 @@ void handle_events(sf::RenderWindow* window) {
   if (key_state.right_pressed)
     player->walk_right();
 
-  if (key_state.space_pressed)
+  if (key_state.space_pressed && !key_state.space_was_pressed) {
+    sounds[0].play();
     player->jump();
+    key_state.space_was_pressed = true;
+  }
 
   if (!key_state.left_pressed && !key_state.right_pressed) {
     player->stop_walking();
@@ -519,7 +542,7 @@ void draw_clock(sf::RenderWindow* window) {
   char frame_string[20];
   sprintf(frame_string, "%f\n", game_time);
   sf::Text test_text(frame_string, game_font);
-  test_text.setPosition(100, 20);
+  test_text.setPosition(WINDOW_WIDTH / 2, 20);
   window->draw(test_text);
 }
 
@@ -548,6 +571,9 @@ void game_loop(sf::RenderWindow* window) {
 
     player_move();
     collide_objects();
+
+    if (!player->is_alive())
+      return;
 
     check_and_move_camera();
 

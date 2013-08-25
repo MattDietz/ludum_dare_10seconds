@@ -17,6 +17,7 @@ struct KeyState {
   bool right_was_pressed;
   bool up_was_pressed;
   bool down_was_pressed;
+  bool space_was_pressed;
 };
 
 #endif

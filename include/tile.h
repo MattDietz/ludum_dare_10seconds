@@ -11,16 +11,18 @@
 class Tile {
   /* Represents an individual tile in a map */
 public:
-  Tile(bool passable=true);
-  Tile(Animation* animation, bool passable=true);
+  Tile(bool passable=true, bool deadly=false);
+  Tile(Animation* animation, bool passable=true, bool deadly=false);
   void draw(sf::RenderWindow* window, Point position);
   void set_animation(Animation* animation);
   void set_passable(bool state);
+  bool is_deadly();
   bool passable();
 
 private:
   Animation* _animation;
   bool _passable;
+  bool _is_deadly;
   //TODO: consider replacing with pointer back to the array later, or both
   int index_x, index_y; // reverse indices into the map
 };
