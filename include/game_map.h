@@ -20,6 +20,8 @@ public:
   void load_level(int level, Player* player, Camera* camera, Animation* tile_animations);
   void draw(sf::RenderWindow* window, Point camera_pos, Point draw_start, Point draw_end);
   void clear();
+  int get_width();
+  int get_height();
 private:
   int _width, _height;
   TileHelper* _tile_helper;

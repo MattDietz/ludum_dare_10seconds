@@ -67,6 +67,6 @@ Tile*** load_map(std::string level_path, Player* player, Camera* camera, Animati
   }
   player->set_position(Point(player_x, player_y));
   camera->set_absolute(camera_x, camera_y);
-  std::cout << "Finished loading " << std::endl;
+  std::cout << "Finished loading " << map_width << "x" << map_height << std::endl;
   return game_map;
 }

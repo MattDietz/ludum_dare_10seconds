@@ -29,7 +29,6 @@ const float JUMP_SPEED = -18.5f;
 
 const float GRAVITY = 1.6f;
 const float TERMINAL_VELOCITY = 15.f;
-const int MAP_WIDTH = 20, MAP_HEIGHT = 20;
 const int TILE_WIDTH = 32, TILE_HEIGHT = 32;
 const int FRAMERATE_LIMIT = 60;
 const int NUM_ANIMATIONS=20;
@@ -276,7 +275,7 @@ void player_collide_top(Point left, Point right, Point left_delta, Point right_d
 
 void player_collide_bottom(Point left, Point right, Point left_delta, Point right_delta) {
   Point player_tile_left = tile_helper.toTileCoords(left_delta);
-  if (player_tile_left.y >= MAP_HEIGHT) {
+  if (player_tile_left.y >= game_map->get_height()) {
     sf::Vector2f player_movement = player->get_movement();
     player->set_movement(player_movement.x, 0);
     return;
@@ -344,7 +343,7 @@ void player_collide_left(Point top, Point bottom, Point top_delta, Point bottom_
 
 void player_collide_right(Point top, Point bottom, Point top_delta, Point bottom_delta) {
   Point player_tile_top = tile_helper.toTileCoords(top_delta);
-  if (player_tile_top.x >= MAP_WIDTH) {
+  if (player_tile_top.x >= game_map->get_width()) {
     sf::Vector2f player_movement = player->get_movement();
     player->set_movement(0, player_movement.y);
     return;
@@ -572,26 +571,19 @@ void game_loop(sf::RenderWindow* window) {
       Point draw_end = tile_helper.toTileCoords(view.right(), view.bottom());
 
       // Some basic attempts at tile clipping
+      int map_width = game_map->get_width();
+      int map_height = game_map->get_height();
+
       draw_start.x = draw_start.x < 0 ? 0 : draw_start.x;
       draw_start.y = draw_start.y < 0 ? 0 : draw_start.y;
-      draw_start.x = draw_start.x > MAP_WIDTH ? MAP_WIDTH : draw_start.x;
-      draw_start.y = draw_start.y > MAP_HEIGHT ? MAP_HEIGHT : draw_start.y;
-      draw_end.x = draw_end.x > MAP_WIDTH ? MAP_WIDTH : draw_end.x;
-      draw_end.y = draw_end.y > MAP_HEIGHT ? MAP_HEIGHT : draw_end.y;
+      draw_start.x = draw_start.x > map_width ? map_width : draw_start.x;
+      draw_start.y = draw_start.y > map_height ? map_height : draw_start.y;
+      draw_end.x = draw_end.x > map_width ? map_width : draw_end.x;
+      draw_end.y = draw_end.y > map_height ? map_height : draw_end.y;
       draw_end.x = draw_end.x < 0 ? 0 : draw_end.x;
       draw_end.y = draw_end.y < 0 ? 0 : draw_end.y;
 
       game_map->draw(window, camera_pos, draw_start, draw_end);
-      //for (int i=draw_start.y-1; i < draw_end.y+1; ++i) {
-      //  Point row_coords = tile_helper.fromTileCoords(0, i);
-      //  if (i < 0 || i == MAP_WIDTH)
-      //    continue;
-      //  for (int j=draw_start.x-1; j < draw_end.x+1; ++j) {
-      //    if (j < 0 || j == MAP_WIDTH)
-      //      continue;
-      //    game_map[j][i]->draw(window, Point(j * TILE_WIDTH - camera_pos.x, i * TILE_HEIGHT - camera_pos.y));
-      //  }
-      //}
 
       for (std::list<Entity *>::iterator it=game_entities.begin(); it != game_entities.end(); ++it) {
         (*it)->draw(window, camera_pos);
