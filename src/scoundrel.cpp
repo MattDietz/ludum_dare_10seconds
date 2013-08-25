@@ -185,6 +185,15 @@ void init_tile_animations() {
   animations[5].set_frame_time(5);
   animations[5].set_frame(0);
 
+  //Radio
+  animations[6].set_sprite_sheet(&tile_sheet);
+  animations[6].add_frame(sf::IntRect(0, 128, 32, 32));
+  animations[6].add_frame(sf::IntRect(32, 128, 32, 32));
+  animations[6].add_frame(sf::IntRect(64, 128, 32, 32));
+  animations[6].add_frame(sf::IntRect(32, 128, 32, 32));
+  animations[6].set_frame_time(5);
+  animations[6].set_frame(0);
+
 }
 
 void init_graphics() {
@@ -226,6 +235,7 @@ void reset_game(bool hard=false) {
   clear_game_entities();
   game_mode = GAME_NEXT_LEVEL;
   game_map->load_level(current_level, player, &camera, animations, tile_animations, sounds, game_entities);
+  player->walk_right();
 }
 
 void init_game()
@@ -233,7 +243,7 @@ void init_game()
   init_graphics();
   init_audio();
 
-  player = new Player(&sprites[3], Point(300, 300), Rectangle(2, 4, 28, 30));
+  player = new Player(&sprites[3], Point(300, 300), Rectangle(6, 4, 26, 30));
   player->set_walk_speed(WALK, MAX_WALK, WALK_STOP);
   player->set_movement(0, 0);
   player->set_fall_speed(GRAVITY, TERMINAL_VELOCITY);

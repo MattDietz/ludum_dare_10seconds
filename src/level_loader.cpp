@@ -67,15 +67,19 @@ Tile*** load_map(std::string level_path, Player* player, Camera* camera, Animati
         battery->set_pickup_sound(&sounds[1]);
         game_entities.push_back(battery);
         game_map[index_x][index_y] = new Tile();
-      } else if (map_tile == 6) {
+      } else if (map_tile == 6 || map_tile == 11) {
+        //SOOOO Nasty, but < 2 hours left, I don't care
         ExitArrow* exit_arrow = new ExitArrow(Rectangle(0, 0, 32, 32));
-        exit_arrow->set_frames(&animations[5]);
+        if (map_tile == 6)
+          exit_arrow->set_frames(&animations[5]);
+        else
+          exit_arrow->set_frames(&animations[6]);
         Point pos = tile_helper->fromTileCoords(index_x, index_y);
         exit_arrow->set_position(pos.x, pos.y);
         exit_arrow->set_pickup_sound(&sounds[1]);
         game_entities.push_back(exit_arrow);
         game_map[index_x][index_y] = new Tile();
-      } else if (map_tile >= 10) {
+      } else if (map_tile == 10) {
         game_map[index_x][index_y] = new Tile(&tile_animations[map_tile-3], false);
       } else if (map_tile > 0) {
         game_map[index_x][index_y] = new Tile(&tile_animations[map_tile-1], false);
