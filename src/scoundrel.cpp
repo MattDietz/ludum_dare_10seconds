@@ -209,6 +209,13 @@ void init_audio() {
   sounds[2].setBuffer(sound_buffers[2]);
 }
 
+void clear_game_entities() {
+  for (std::list<Entity *>::iterator it=game_entities.begin(); it != game_entities.end(); ++it) {
+    delete *it;
+  }
+  game_entities.clear();
+}
+
 void reset_game(bool hard=false) {
   if (hard)
     current_level = game_start_level;
@@ -216,6 +223,7 @@ void reset_game(bool hard=false) {
   game_time = 10.f;
   player->set_alive();
   player->reset();
+  clear_game_entities();
   game_mode = GAME_NEXT_LEVEL;
   game_map->load_level(current_level, player, &camera, animations, tile_animations, sounds, game_entities);
 }
@@ -248,6 +256,7 @@ void deinitialize_game(sf::RenderWindow* window) {
   delete window;
   delete player;
   game_map->clear();
+  clear_game_entities();
   delete game_map;
   delete[] textures;
   delete[] sprites;
@@ -547,6 +556,8 @@ void handle_events(sf::RenderWindow* window) {
   }
 }
 
+
+
 void display_framerate(sf::RenderWindow* window) {
   //Super basic framerate calculator.
   //
@@ -612,6 +623,7 @@ void collide_objects() {
       int cur_lev = current_level;
       dynamic_cast<Collidable *>(game_entity)->perform_collision_action(player, game_time, current_level);
       if (!game_entity->is_alive()) {
+        delete *it;
         game_entities.erase(it);
       }
       if (cur_lev != current_level) {

@@ -39,7 +39,9 @@ Rectangle Battery::get_bounding_rect() {
 }
 
 void Battery::perform_collision_action(Player* player, float& game_time, int& current_level) {
-  game_time += 10.0f;
-  _pickup_sound->play();
-  kill();
+  if (_is_alive) {
+    game_time += 10.0f;
+    _pickup_sound->play();
+    kill();
+  }
 }
