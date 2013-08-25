@@ -18,7 +18,7 @@
 #include "tile.h"
 #include "tile_helper.h"
 
-enum game_modes {GAME_PLAY, GAME_END, GAME_WIN};
+enum game_modes {GAME_PLAY, GAME_END, GAME_WIN, GAME_NEXT_LEVEL};
 
 //TODO: move away from all the globals. 
 const float WALK = 0.25f;
@@ -196,7 +196,7 @@ void reset_game(bool hard=false) {
   game_time = 10.f;
   player->set_alive();
   player->reset();
-  game_mode = GAME_PLAY;
+  game_mode = GAME_NEXT_LEVEL;
   game_map->load_level(current_level, player, &camera, animations, tile_animations, sounds, game_entities);
 }
 
@@ -219,7 +219,6 @@ void init_game()
   camera.calculate_snap();
 
   game_time = 10.f;
-  game_mode = GAME_PLAY;
 
   game_map = new GameMap(&tile_helper);
   reset_game();
@@ -451,6 +450,11 @@ void handle_events(sf::RenderWindow* window) {
   sf::Event event;
   while (window->pollEvent(event)) {
     if (event.type == sf::Event::KeyPressed) {
+      if (game_mode == GAME_NEXT_LEVEL) {
+        game_mode = GAME_PLAY;
+        return;
+      }
+
       if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
         key_state.left_pressed = true;
       } 
@@ -554,6 +558,15 @@ void draw_win_screen(sf::RenderWindow* window) {
   window->draw(replay_text);
 }
 
+void draw_next_level_screen(sf::RenderWindow* window) {
+  char level_string[100];
+  sprintf(level_string, "Level %d", current_level);
+  sf::Text next_level_text(level_string, game_font);
+  next_level_text.setCharacterSize(72);
+  next_level_text.setPosition(WINDOW_WIDTH / 2 - 180, WINDOW_HEIGHT / 2);
+  window->draw(next_level_text);
+}
+
 void collide_objects() {
   Collidable temp;
   Rectangle player_rect = player->get_bounding_rect();
@@ -573,8 +586,11 @@ void collide_objects() {
         if (current_level > total_levels) {
           //You win!
           game_mode = GAME_WIN;
-        } else
+        } else {
+          game_mode = GAME_NEXT_LEVEL;
           reset_game();
+          return;
+        }
       }
     }
   }
@@ -582,7 +598,6 @@ void collide_objects() {
 
 void game_loop(sf::RenderWindow* window) {
   int decay = 30;
-  game_mode = GAME_PLAY;
   while (window->isOpen()) {
     window->clear(sf::Color::Black);
     handle_events(window);
@@ -590,6 +605,8 @@ void game_loop(sf::RenderWindow* window) {
       draw_gameover(window);
     } else if (game_mode == GAME_WIN) {
       draw_win_screen(window);
+    } else if (game_mode == GAME_NEXT_LEVEL) {
+      draw_next_level_screen(window);
     } else if (game_mode == GAME_PLAY) {
       Rectangle view = camera.get_view_rect();
       Point camera_pos = view.upper_left();

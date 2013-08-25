@@ -41,6 +41,7 @@ void GameMap::clear() {
     }
     delete[] _game_map;
   }
+  _game_map = NULL;
 }
 
 void GameMap::draw(sf::RenderWindow* window, Point camera_pos, Point draw_start, Point draw_end) {
