@@ -1,4 +1,4 @@
-#ifndef SCOOUNDREL_TILE_HELPER
+#ifndef SCOUNDREL_TILE_HELPER
 #define SCOUNDREL_TILE_HELPER
 
 #include <cmath>

@@ -12,6 +12,7 @@
 #include "battery.h"
 #include "collidable.h"
 #include "camera.h"
+#include "game_map.h"
 #include "player.h"
 #include "scoundrel_utils.h"
 #include "tile.h"
@@ -37,7 +38,8 @@ const int NUM_ANIMATIONS=20;
 int WINDOW_WIDTH, WINDOW_HEIGHT;
 const float CAMERA_SNAP_X = 0.2f, CAMERA_SNAP_Y = 0.15f;
 
-Tile*** game_map; //OH GOD
+//I really hate all these globals. With more time I'd actually write some decent code
+GameMap* game_map;
 sf::Sprite* sprites;
 sf::Texture* textures;
 sf::Texture tile_sheet;
@@ -52,44 +54,28 @@ sf::SoundBuffer* sound_buffers;
 sf::Sound* sounds;
 Animation* animations, *tile_animations;
 game_modes game_mode;
+int current_level;
 
 //Linked list would be much more efficient overall but I don't care right now
 std::list<Entity*> game_entities;
-
-int simple_map[20][20] = {
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,3,3,3,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,
-  0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,
-  0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,
-  3,0,0,3,3,3,1,3,3,3,3,3,3,3,3,3,3,3,3,3,
-  1,4,4,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-};
 
 float framerate = 0.f;
 bool show_fps = false;
 TileHelper tile_helper(TILE_WIDTH, TILE_HEIGHT);
 
-void load_config() {
+void load_config(int argc, char ** argv) {
   configlib::configfile config("10second.conf");
   configlib::configitem<int> window_width(config, "main", "int window_width", "height=", 1024);
   configlib::configitem<int> window_height(config, "main", "int window_height", "width=", 768);
+  configlib::configitem<int> start_level(config, "main", "int start_level", "start_level=", 1);
   config.read();
+
+  // Throws abort traps, don't care why
+  // config.parse(argc, argv);
+
   WINDOW_WIDTH = window_width;
   WINDOW_HEIGHT = window_height;
+  current_level = start_level;
 }
 
 sf::Texture load_image(std::string image_path) {
@@ -98,38 +84,6 @@ sf::Texture load_image(std::string image_path) {
     std::cout << "Failed to load " << image_path << std::endl;
   }
   return tex;
-}
-
-void init_map()
-{
-  game_map = new Tile**[MAP_WIDTH];
-  for (int i=0; i <MAP_WIDTH; ++i) {
-    game_map[i] = new Tile*[MAP_HEIGHT];
-    for (int j=0; j < MAP_HEIGHT; j++) {
-      int map_tile = simple_map[j][i];
-      if (map_tile > 0) {
-        if (map_tile == 4) {
-          //Spikes
-          game_map[i][j] = new Tile(&tile_animations[map_tile-1], false, true);
-        } else {
-          game_map[i][j] = new Tile(&tile_animations[map_tile-1], false);
-        }
-      } else
-        game_map[i][j] = new Tile();
-    }
-  }
-  Battery* battery = new Battery(Rectangle(8, 8, 22, 28));
-  battery->set_frames(&animations[4]);
-  battery->set_position(100, 400);
-  battery->set_pickup_sound(&sounds[1]);
-  game_entities.push_back(battery);
-}
-
-void unload_map() {
-  for (int i=0; i <MAP_HEIGHT; ++i) {
-    delete game_map[i];
-  }
-  delete[] game_map;
 }
 
 sf::RenderWindow* init_sfml() {
@@ -255,6 +209,9 @@ void init_game()
 
   game_time = 10.f;
   game_mode = GAME_PLAY;
+
+  game_map = new GameMap(&tile_helper);
+  game_map->load_level(current_level, player, &camera, tile_animations);
 }
 
 void deinitialize_game(sf::RenderWindow* window) {
@@ -304,7 +261,7 @@ void player_collide_top(Point left, Point right, Point left_delta, Point right_d
 
   for (int i = (int)player_tile_left.x; i <= (int)player_tile_right.x; ++i) {
     int ptl = (int)player_tile_left.y;
-    if (!game_map[i][ptl]->passable()) {
+    if (!game_map->get_tile(i, ptl)->passable()) {
       sf::Vector2f player_movement = player->get_movement();
       Point tile_world = tile_helper.fromTileCoords(i, ptl); 
       float delta_y = float(left.y - tile_world.y - TILE_HEIGHT);
@@ -328,7 +285,7 @@ void player_collide_bottom(Point left, Point right, Point left_delta, Point righ
   Point player_tile_right = tile_helper.toTileCoords(right_delta);
   for (int i = (int)player_tile_left.x; i <= (int)player_tile_right.x; ++i) {
     int ptl = (int) player_tile_left.y;
-    if (!game_map[i][ptl]->passable()) {
+    if (!game_map->get_tile(i, ptl)->passable()) {
       sf::Vector2f player_movement = player->get_movement();
       Point tile_world = tile_helper.fromTileCoords(i, ptl);
       float delta_y = float(tile_world.y - left.y);
@@ -353,7 +310,7 @@ void player_collide_bottom(Point left, Point right, Point left_delta, Point righ
         player->set_state(ENTITY_JUMPING);
       }
     }
-    if (game_map[i][ptl]->is_deadly()) {
+    if (game_map->get_tile(i, ptl)->is_deadly()) {
       std::cout << "Killed" << std::endl;
       player->kill();
       return;
@@ -372,7 +329,7 @@ void player_collide_left(Point top, Point bottom, Point top_delta, Point bottom_
   Point player_tile_bottom = tile_helper.toTileCoords(bottom_delta);
   for (int i = (int)player_tile_top.y; i <= (int)player_tile_bottom.y; ++i) {
     int ptt = (int)player_tile_top.x;
-    if (!game_map[ptt][i]->passable()) {
+    if (!game_map->get_tile(ptt, i)->passable()) {
       sf::Vector2f player_movement = player->get_movement();
       Point tile_world = tile_helper.fromTileCoords(ptt, i);
       float delta_x = float(top.x - (tile_world.x + TILE_WIDTH));
@@ -396,7 +353,7 @@ void player_collide_right(Point top, Point bottom, Point top_delta, Point bottom
   Point player_tile_bottom = tile_helper.toTileCoords(bottom_delta);
   for (int i = (int)player_tile_top.y; i <= (int)player_tile_bottom.y; ++i) {
     int ptt = (int)player_tile_top.x;
-    if (!game_map[ptt][i]->passable()) {
+    if (!game_map->get_tile(ptt, i)->passable()) {
       sf::Vector2f player_movement = player->get_movement();
       Point tile_world = tile_helper.fromTileCoords(ptt, i);
       float delta_x = float(tile_world.x - top.x);
@@ -550,7 +507,7 @@ void display_framerate(sf::RenderWindow* window) {
   //TODO: Make a better one - http://gafferongames.com/game-physics/fix-your-timestep/
   char frame_string[5];
   int rate = (int)(1.0f / framerate);
-  sprintf(frame_string, "%d\n", rate);
+  sprintf(frame_string, "%d", rate);
   sf::Text test_text(frame_string, game_font);
   test_text.setPosition(100, 20);
   window->draw(test_text);
@@ -558,7 +515,7 @@ void display_framerate(sf::RenderWindow* window) {
 
 void draw_clock(sf::RenderWindow* window) {
   char frame_string[20];
-  sprintf(frame_string, "%f\n", game_time);
+  sprintf(frame_string, "%f", game_time);
   sf::Text test_text(frame_string, game_font);
   test_text.setPosition(WINDOW_WIDTH / 2, 20);
   window->draw(test_text);
@@ -588,7 +545,7 @@ void collide_objects() {
 
 void game_loop(sf::RenderWindow* window) {
   int decay = 30;
-  game_mode = GAME_END;
+  game_mode = GAME_PLAY;
   while (window->isOpen()) {
     window->clear(sf::Color::Black);
     handle_events(window);
@@ -597,7 +554,7 @@ void game_loop(sf::RenderWindow* window) {
     } else if (game_mode == GAME_PLAY) {
       Rectangle view = camera.get_view_rect();
       Point camera_pos = view.upper_left();
-
+      
       player_move();
       collide_objects();
 
@@ -624,16 +581,17 @@ void game_loop(sf::RenderWindow* window) {
       draw_end.x = draw_end.x < 0 ? 0 : draw_end.x;
       draw_end.y = draw_end.y < 0 ? 0 : draw_end.y;
 
-      for (int i=draw_start.y-1; i < draw_end.y+1; ++i) {
-        Point row_coords = tile_helper.fromTileCoords(0, i);
-        if (i < 0 || i == MAP_WIDTH)
-          continue;
-        for (int j=draw_start.x-1; j < draw_end.x+1; ++j) {
-          if (j < 0 || j == MAP_WIDTH)
-            continue;
-          game_map[j][i]->draw(window, Point(j * TILE_WIDTH - camera_pos.x, i * TILE_HEIGHT - camera_pos.y));
-        }
-      }
+      game_map->draw(window, camera_pos, draw_start, draw_end);
+      //for (int i=draw_start.y-1; i < draw_end.y+1; ++i) {
+      //  Point row_coords = tile_helper.fromTileCoords(0, i);
+      //  if (i < 0 || i == MAP_WIDTH)
+      //    continue;
+      //  for (int j=draw_start.x-1; j < draw_end.x+1; ++j) {
+      //    if (j < 0 || j == MAP_WIDTH)
+      //      continue;
+      //    game_map[j][i]->draw(window, Point(j * TILE_WIDTH - camera_pos.x, i * TILE_HEIGHT - camera_pos.y));
+      //  }
+      //}
 
       for (std::list<Entity *>::iterator it=game_entities.begin(); it != game_entities.end(); ++it) {
         (*it)->draw(window, camera_pos);
@@ -658,14 +616,12 @@ void game_loop(sf::RenderWindow* window) {
 
 int main(int argc, char ** argv)
 {
-  load_config();
+  load_config(argc, argv);
   sf::RenderWindow* window = init_sfml();
   window->setFramerateLimit(FRAMERATE_LIMIT);
   window->setVerticalSyncEnabled(true);
   init_game();
-  init_map();
   game_loop(window);
   deinitialize_game(window);
-  unload_map();
   return 0;
 }
