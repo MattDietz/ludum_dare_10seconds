@@ -12,6 +12,7 @@
 #include "animation.h"
 #include "battery.h"
 #include "camera.h"
+#include "exit_arrow.h"
 #include "player.h"
 #include "tile.h"
 #include "tile_helper.h"

@@ -18,7 +18,7 @@
 #include "tile.h"
 #include "tile_helper.h"
 
-enum game_modes {GAME_PLAY, GAME_END};
+enum game_modes {GAME_PLAY, GAME_END, GAME_WIN};
 
 //TODO: move away from all the globals. 
 const float WALK = 0.25f;
@@ -53,7 +53,7 @@ sf::SoundBuffer* sound_buffers;
 sf::Sound* sounds;
 Animation* animations, *tile_animations;
 game_modes game_mode;
-int current_level;
+int game_start_level, current_level, total_levels;
 
 //Linked list would be much more efficient overall but I don't care right now
 std::list<Entity*> game_entities;
@@ -67,6 +67,7 @@ void load_config(int argc, char ** argv) {
   configlib::configitem<int> window_width(config, "main", "int window_width", "height=", 1024);
   configlib::configitem<int> window_height(config, "main", "int window_height", "width=", 768);
   configlib::configitem<int> start_level(config, "main", "int start_level", "start_level=", 1);
+  configlib::configitem<int> num_levels(config, "main", "int num_levels", "num_levels=", 1);
   config.read();
 
   // Throws abort traps, don't care why
@@ -74,7 +75,9 @@ void load_config(int argc, char ** argv) {
 
   WINDOW_WIDTH = window_width;
   WINDOW_HEIGHT = window_height;
+  game_start_level = start_level;
   current_level = start_level;
+  total_levels = num_levels;
 }
 
 sf::Texture load_image(std::string image_path) {
@@ -153,22 +156,20 @@ void init_tile_animations() {
   animations[4].set_frame_time(5);
   animations[4].set_frame(0);
 
+  //Exit Arrow
+  animations[5].set_sprite_sheet(&tile_sheet);
+  animations[5].add_frame(sf::IntRect(0, 64, 32, 32));
+  animations[5].add_frame(sf::IntRect(32, 64, 32, 32));
+  animations[5].add_frame(sf::IntRect(64, 64, 32, 32));
+  animations[5].add_frame(sf::IntRect(96, 64, 32, 32));
+  animations[5].set_frame_time(5);
+  animations[5].set_frame(0);
+
 }
 
 void init_graphics() {
   sprites = new sf::Sprite[10];
   textures = new sf::Texture[10];
-  textures[0] = load_image("content/grass_32.jpg");
-  sprites[0].setTexture(textures[0]);
-
-  textures[1] = load_image("content/dirt_32.png");
-  sprites[1].setTexture(textures[1]);
-
-  textures[2] = load_image("content/rocks_32.png");
-  sprites[2].setTexture(textures[2]);
-
-  textures[3] = load_image("content/player.png");
-  sprites[3].setTexture(textures[3]);
 
   init_tile_animations();
 
@@ -188,9 +189,11 @@ void init_audio() {
   sounds[2].setBuffer(sound_buffers[2]);
 }
 
-void reset_game() {
+void reset_game(bool hard=false) {
+  if (hard)
+    current_level = game_start_level;
+
   game_time = 10.f;
-  player->set_position(Point(300, 300));
   player->set_alive();
   player->reset();
   game_mode = GAME_PLAY;
@@ -459,6 +462,9 @@ void handle_events(sf::RenderWindow* window) {
         if (game_mode == GAME_END) {
           reset_game();
           return;
+        } else if (game_mode == GAME_WIN) {
+          reset_game(true);
+          return;
         }
         key_state.space_pressed = true;
       }
@@ -529,6 +535,23 @@ void draw_gameover(sf::RenderWindow* window) {
   gameover_text.setCharacterSize(72);
   gameover_text.setPosition(WINDOW_WIDTH / 2 - 200, WINDOW_HEIGHT / 2);
   window->draw(gameover_text);
+
+  sf::Text replay_text("Press SPACE BAR to play again", game_font);
+  replay_text.setCharacterSize(36);
+  replay_text.setPosition((WINDOW_WIDTH / 2) - 315, (WINDOW_HEIGHT / 2) + 100);
+  window->draw(replay_text);
+}
+
+void draw_win_screen(sf::RenderWindow* window) {
+  sf::Text win_text("YOU WIN", game_font);
+  win_text.setCharacterSize(72);
+  win_text.setPosition(WINDOW_WIDTH / 2 - 180, WINDOW_HEIGHT / 2);
+  window->draw(win_text);
+
+  sf::Text replay_text("Press SPACE BAR to play again", game_font);
+  replay_text.setCharacterSize(36);
+  replay_text.setPosition(WINDOW_WIDTH / 2 - 315, (WINDOW_HEIGHT / 2) + 100);
+  window->draw(replay_text);
 }
 
 void collide_objects() {
@@ -538,9 +561,20 @@ void collide_objects() {
     Rectangle other_rect = (*it)->get_bounding_rect();
     if (player_rect.intersects(&other_rect)) {
       Entity* game_entity = (*it);
-      dynamic_cast<Collidable *>(game_entity)->perform_collision_action(player, game_time);
+
+      // In a better world, I'd pass in a complete game context object that can be updated
+      int cur_lev = current_level;
+      dynamic_cast<Collidable *>(game_entity)->perform_collision_action(player, game_time, current_level);
       if (!game_entity->is_alive()) {
         game_entities.erase(it);
+      }
+      if (cur_lev != current_level) {
+        //next map!
+        if (current_level > total_levels) {
+          //You win!
+          game_mode = GAME_WIN;
+        } else
+          reset_game();
       }
     }
   }
@@ -553,7 +587,9 @@ void game_loop(sf::RenderWindow* window) {
     window->clear(sf::Color::Black);
     handle_events(window);
     if (game_mode == GAME_END) {
-      draw_gameover(window); 
+      draw_gameover(window);
+    } else if (game_mode == GAME_WIN) {
+      draw_win_screen(window);
     } else if (game_mode == GAME_PLAY) {
       Rectangle view = camera.get_view_rect();
       Point camera_pos = view.upper_left();

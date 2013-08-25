@@ -1,5 +1,5 @@
-#ifndef SCOUNDREL_BATTERY
-#define SCOUNDREL_BATTERY
+#ifndef SCOUNDREL_EXIT_ARROW
+#define SCOUNDREL_EXIT_ARROW
 
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
@@ -11,9 +11,10 @@
 #include "entity.h"
 #include "rect.h"
 
-class Battery : public Entity, public Collidable {
+class ExitArrow : public Entity, public Collidable {
+
 public:
-  Battery(Rectangle bounding_rect);
+  ExitArrow(Rectangle bounding_rect);
   void draw(sf::RenderWindow * window, Point camera);
   void set_frames(Animation* frames);
   Rectangle get_bounding_rect();
@@ -27,7 +28,6 @@ private:
   Point _position;
   Rectangle _bounding_rect;
   sf::Sound* _pickup_sound;
-
 };
 
 #endif

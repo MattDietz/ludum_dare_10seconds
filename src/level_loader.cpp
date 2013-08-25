@@ -64,6 +64,14 @@ Tile*** load_map(std::string level_path, Player* player, Camera* camera, Animati
         battery->set_pickup_sound(&sounds[1]);
         game_entities.push_back(battery);
         game_map[index_x][index_y] = new Tile();
+      } else if (map_tile == 6) {
+        ExitArrow* exit_arrow = new ExitArrow(Rectangle(0, 0, 32, 32));
+        exit_arrow->set_frames(&animations[5]);
+        Point pos = tile_helper->fromTileCoords(index_x, index_y);
+        exit_arrow->set_position(pos.x, pos.y);
+        exit_arrow->set_pickup_sound(&sounds[1]);
+        game_entities.push_back(exit_arrow);
+        game_map[index_x][index_y] = new Tile();
       } else if (map_tile > 0) {
         game_map[index_x][index_y] = new Tile(&tile_animations[map_tile-1], false);
       } else {

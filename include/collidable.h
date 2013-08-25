@@ -7,7 +7,7 @@
 class Collidable {
 public:
   Collidable();
-  virtual void perform_collision_action(Player* player, float& game_time);
+  virtual void perform_collision_action(Player* player, float& game_time, int& current_level);
 
 
 };
