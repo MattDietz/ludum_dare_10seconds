@@ -75,16 +75,20 @@ Tile*** load_map(std::string level_path, Player* player, Camera* camera, Animati
         exit_arrow->set_pickup_sound(&sounds[1]);
         game_entities.push_back(exit_arrow);
         game_map[index_x][index_y] = new Tile();
+      } else if (map_tile >= 10) {
+        game_map[index_x][index_y] = new Tile(&tile_animations[map_tile-3], false);
       } else if (map_tile > 0) {
         game_map[index_x][index_y] = new Tile(&tile_animations[map_tile-1], false);
-      } else {
+      }  else {
         game_map[index_x][index_y] = new Tile();
       }
+      std::cout << index_x << " ";
 
       index_x++;
       if (index_x == map_width) {
         index_x = 0;
         index_y++;
+        std::cout << std::endl;
       }
     }
   }

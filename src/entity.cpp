@@ -6,7 +6,6 @@
 #include "entity_states.h"
 
 Entity::Entity():_is_alive(true) {
-  std::cout << "Entity Constructor" << std::endl;
 }
 
 Entity::~Entity() {

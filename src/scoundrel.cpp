@@ -134,6 +134,11 @@ void init_tile_animations() {
   tile_animations[6].add_frame(sf::IntRect(64, 96, 32, 32));
   tile_animations[6].set_frame(0);
 
+  //Dead Grass
+  tile_animations[7].set_sprite_sheet(&tile_sheet);
+  tile_animations[7].add_frame(sf::IntRect(0, 0, 32, 32));
+  tile_animations[7].set_frame(0);
+
   //Player walk right
   animations[0].set_sprite_sheet(&tile_sheet);
   animations[0].add_frame(sf::IntRect(0, 32, 32, 32));
@@ -242,6 +247,8 @@ void init_game()
 void deinitialize_game(sf::RenderWindow* window) {
   delete window;
   delete player;
+  game_map->clear();
+  delete game_map;
   delete[] textures;
   delete[] sprites;
   delete[] sound_buffers;
@@ -357,6 +364,10 @@ void player_collide_left(Point top, Point bottom, Point top_delta, Point bottom_
   Point player_tile_bottom = tile_helper.toTileCoords(bottom_delta);
   for (int i = (int)player_tile_top.y; i <= (int)player_tile_bottom.y; ++i) {
     int ptt = (int)player_tile_top.x;
+    if (game_map->get_tile(ptt, i)->is_deadly()) {
+      player->kill();
+      return;
+    }
     if (!game_map->get_tile(ptt, i)->passable()) {
       sf::Vector2f player_movement = player->get_movement();
       Point tile_world = tile_helper.fromTileCoords(ptt, i);
@@ -366,10 +377,6 @@ void player_collide_left(Point top, Point bottom, Point top_delta, Point bottom_
       } else if (delta_x > 0.f && -delta_x >= player_movement.x) {
         player->set_movement(-delta_x + 1, player_movement.y);
       }
-    }
-    if (game_map->get_tile(ptt, i)->is_deadly()) {
-      player->kill();
-      return;
     }
   }
 }
@@ -385,6 +392,10 @@ void player_collide_right(Point top, Point bottom, Point top_delta, Point bottom
   Point player_tile_bottom = tile_helper.toTileCoords(bottom_delta);
   for (int i = (int)player_tile_top.y; i <= (int)player_tile_bottom.y; ++i) {
     int ptt = (int)player_tile_top.x;
+    if (game_map->get_tile(ptt, i)->is_deadly()) {
+      player->kill();
+      return;
+    }
     if (!game_map->get_tile(ptt, i)->passable()) {
       sf::Vector2f player_movement = player->get_movement();
       Point tile_world = tile_helper.fromTileCoords(ptt, i);
@@ -394,10 +405,6 @@ void player_collide_right(Point top, Point bottom, Point top_delta, Point bottom
       } else if (delta_x > 0.f && delta_x > player_movement.x) {
         player->set_movement(delta_x - 1, player_movement.y);
       }
-      return;
-    }
-    if (game_map->get_tile(ptt, i)->is_deadly()) {
-      player->kill();
       return;
     }
   }

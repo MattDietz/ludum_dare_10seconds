@@ -35,8 +35,13 @@ int GameMap::get_height() {
 
 void GameMap::clear() {
   std::cout << "Cleaning up map data..." << std::endl;
+
   if (_game_map) {
-    for (int i=0; i < _height; ++i) {
+    for (int i=0; i < _width; ++i) {
+      for (int j=0; j < _height; ++j) {
+        if (_game_map[i][j])
+          delete _game_map[i][j];
+      }
       delete _game_map[i];
     }
     delete[] _game_map;
@@ -45,15 +50,15 @@ void GameMap::clear() {
 }
 
 void GameMap::draw(sf::RenderWindow* window, Point camera_pos, Point draw_start, Point draw_end) {
-  for (int i=draw_start.y-1; i < draw_end.y+1; ++i) {
+  for (int i=draw_start.x-1; i < draw_end.x+1; ++i) {
     Point row_coords = _tile_helper->fromTileCoords(0, i);
-    if (i < 0 || i == _height)
+    if (i < 0 || i == _width)
       continue;
-    for (int j=draw_start.x-1; j < draw_end.x+1; ++j) {
-      if (j < 0 || j == _width)
+    for (int j=draw_start.y-1; j < draw_end.y+1; ++j) {
+      if (j < 0 || j == _height)
         continue;
-      _game_map[j][i]->draw(window, Point(j * _tile_helper->tile_width - camera_pos.x,
-                                          i * _tile_helper->tile_height - camera_pos.y));
+      _game_map[i][j]->draw(window, Point(i * _tile_helper->tile_width - camera_pos.x,
+                                          j * _tile_helper->tile_height - camera_pos.y));
     }
   }
 }
