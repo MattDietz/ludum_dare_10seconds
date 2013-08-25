@@ -34,3 +34,11 @@ void Entity::kill() {
 bool Entity::is_alive() {
   return _is_alive;
 }
+
+void Entity::set_alive() {
+  _is_alive = true;
+}
+
+void Entity::set_position(Point position) {
+  _position = position;
+}

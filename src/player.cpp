@@ -53,6 +53,10 @@ int Player::get_state() {
   return _state;
 }
 
+void Player::reset() {
+  _state = 0;
+}
+
 bool Player::is_state_set(int state) {
   return _state & state;
 }

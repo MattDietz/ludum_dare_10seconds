@@ -33,6 +33,7 @@ public:
   bool is_state_set(int state);
   void set_state(int state);
   void unset_state(int state);
+  void reset();
 
   //Player walk handlers
   void set_walk_speed(float walk, float max_walk, float walk_stop);

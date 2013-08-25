@@ -17,6 +17,8 @@
 #include "tile.h"
 #include "tile_helper.h"
 
+enum game_modes {GAME_PLAY, GAME_END};
+
 //TODO: move away from all the globals. 
 const float WALK = 0.25f;
 const float MAX_WALK = 4.f;
@@ -49,6 +51,7 @@ float game_time;
 sf::SoundBuffer* sound_buffers;
 sf::Sound* sounds;
 Animation* animations, *tile_animations;
+game_modes game_mode;
 
 //Linked list would be much more efficient overall but I don't care right now
 std::list<Entity*> game_entities;
@@ -227,6 +230,9 @@ void init_audio() {
 
   sound_buffers[1].loadFromFile("content/battery.wav");
   sounds[1].setBuffer(sound_buffers[1]);
+
+  sound_buffers[2].loadFromFile("content/death.wav");
+  sounds[2].setBuffer(sound_buffers[2]);
 }
 
 void init_game()
@@ -248,6 +254,7 @@ void init_game()
   camera.calculate_snap();
 
   game_time = 10.f;
+  game_mode = GAME_PLAY;
 }
 
 void deinitialize_game(sf::RenderWindow* window) {
@@ -447,6 +454,13 @@ void player_move_right(float delta) {
   player_collide_right(player_top_coords, player_bottom_coords, player_delta_top, player_delta_bottom);
 }
 
+void reset_game() {
+  game_time = 10.f;
+  player->set_position(Point(300, 300));
+  player->set_alive();
+  game_mode = GAME_PLAY;
+}
+
 void player_move() {
   player->fall();
   sf::Vector2f player_move = player->get_movement();
@@ -482,6 +496,10 @@ void handle_events(sf::RenderWindow* window) {
       }
 
       if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
+        if (game_mode == GAME_END) {
+          reset_game();
+          return;
+        }
         key_state.space_pressed = true;
       }
 
@@ -546,6 +564,13 @@ void draw_clock(sf::RenderWindow* window) {
   window->draw(test_text);
 }
 
+void draw_gameover(sf::RenderWindow* window) {
+  sf::Text gameover_text("GAME OVER", game_font);
+  gameover_text.setCharacterSize(72);
+  gameover_text.setPosition(WINDOW_WIDTH / 2 - 200, WINDOW_HEIGHT / 2);
+  window->draw(gameover_text);
+}
+
 void collide_objects() {
   Collidable temp;
   Rectangle player_rect = player->get_bounding_rect();
@@ -563,63 +588,70 @@ void collide_objects() {
 
 void game_loop(sf::RenderWindow* window) {
   int decay = 30;
+  game_mode = GAME_END;
   while (window->isOpen()) {
-    Rectangle view = camera.get_view_rect();
-    Point camera_pos = view.upper_left();
-
-    handle_events(window);
-
-    player_move();
-    collide_objects();
-
-    if (!player->is_alive())
-      return;
-
-    check_and_move_camera();
-
     window->clear(sf::Color::Black);
-    Point tile_start = tile_helper.toTileCoords(camera_pos);
+    handle_events(window);
+    if (game_mode == GAME_END) {
+      draw_gameover(window); 
+    } else if (game_mode == GAME_PLAY) {
+      Rectangle view = camera.get_view_rect();
+      Point camera_pos = view.upper_left();
 
-    Point draw_start = tile_helper.toTileCoords(view.left(), view.top());
-    Point draw_end = tile_helper.toTileCoords(view.right(), view.bottom());
+      player_move();
+      collide_objects();
 
-    // Some basic attempts at tile clipping
-    draw_start.x = draw_start.x < 0 ? 0 : draw_start.x;
-    draw_start.y = draw_start.y < 0 ? 0 : draw_start.y;
-    draw_start.x = draw_start.x > MAP_WIDTH ? MAP_WIDTH : draw_start.x;
-    draw_start.y = draw_start.y > MAP_HEIGHT ? MAP_HEIGHT : draw_start.y;
-    draw_end.x = draw_end.x > MAP_WIDTH ? MAP_WIDTH : draw_end.x;
-    draw_end.y = draw_end.y > MAP_HEIGHT ? MAP_HEIGHT : draw_end.y;
-    draw_end.x = draw_end.x < 0 ? 0 : draw_end.x;
-    draw_end.y = draw_end.y < 0 ? 0 : draw_end.y;
-
-    for (int i=draw_start.y-1; i < draw_end.y+1; ++i) {
-      Point row_coords = tile_helper.fromTileCoords(0, i);
-      if (i < 0 || i == MAP_WIDTH)
+      if (!player->is_alive()) {
+        sounds[2].play();
+        game_mode = GAME_END;
         continue;
-      for (int j=draw_start.x-1; j < draw_end.x+1; ++j) {
-        if (j < 0 || j == MAP_WIDTH)
+      }
+
+      check_and_move_camera();
+
+      Point tile_start = tile_helper.toTileCoords(camera_pos);
+
+      Point draw_start = tile_helper.toTileCoords(view.left(), view.top());
+      Point draw_end = tile_helper.toTileCoords(view.right(), view.bottom());
+
+      // Some basic attempts at tile clipping
+      draw_start.x = draw_start.x < 0 ? 0 : draw_start.x;
+      draw_start.y = draw_start.y < 0 ? 0 : draw_start.y;
+      draw_start.x = draw_start.x > MAP_WIDTH ? MAP_WIDTH : draw_start.x;
+      draw_start.y = draw_start.y > MAP_HEIGHT ? MAP_HEIGHT : draw_start.y;
+      draw_end.x = draw_end.x > MAP_WIDTH ? MAP_WIDTH : draw_end.x;
+      draw_end.y = draw_end.y > MAP_HEIGHT ? MAP_HEIGHT : draw_end.y;
+      draw_end.x = draw_end.x < 0 ? 0 : draw_end.x;
+      draw_end.y = draw_end.y < 0 ? 0 : draw_end.y;
+
+      for (int i=draw_start.y-1; i < draw_end.y+1; ++i) {
+        Point row_coords = tile_helper.fromTileCoords(0, i);
+        if (i < 0 || i == MAP_WIDTH)
           continue;
-        game_map[j][i]->draw(window, Point(j * TILE_WIDTH - camera_pos.x, i * TILE_HEIGHT - camera_pos.y));
+        for (int j=draw_start.x-1; j < draw_end.x+1; ++j) {
+          if (j < 0 || j == MAP_WIDTH)
+            continue;
+          game_map[j][i]->draw(window, Point(j * TILE_WIDTH - camera_pos.x, i * TILE_HEIGHT - camera_pos.y));
+        }
+      }
+
+      for (std::list<Entity *>::iterator it=game_entities.begin(); it != game_entities.end(); ++it) {
+        (*it)->draw(window, camera_pos);
+      }
+
+      player->draw(window, camera_pos);
+
+      if (show_fps)
+        display_framerate(window);
+      draw_clock(window);
+
+      framerate = fps_clock.restart().asSeconds();
+      game_time -= framerate;
+      if (game_time <= 0.f) {
+        player->kill();
       }
     }
-
-    for (std::list<Entity *>::iterator it=game_entities.begin(); it != game_entities.end(); ++it) {
-      (*it)->draw(window, camera_pos);
-    }
-
-    player->draw(window, camera_pos);
-
-    if (show_fps)
-      display_framerate(window);
-    draw_clock(window);
-
     window->display();
-    framerate = fps_clock.restart().asSeconds();
-    game_time -= framerate;
-    if (game_time <= 0.f) {
-      return;
-    }
   }
 }
 
