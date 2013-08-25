@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "rect.h"
 
 Rectangle::Rectangle() {
@@ -49,12 +51,41 @@ Point Rectangle::upper_left() {
 bool Rectangle::intersects(Rectangle* other) {
   //TODO: May need to return a more complex object later to designate which parts intersect
   //TODO: May also need to do actual line by line intersection as well.
-  if ((p1.x >= other->left() && p1.x <= other->right() && p1.y >= other->top() && p1.y <= other->bottom()) ||
-      (p2.x >= other->left() && p2.x <= other->right() && p2.y >= other->top() && p2.y <= other->bottom()) ||
-      (p3.x >= other->left() && p3.x <= other->right() && p3.y >= other->top() && p3.y <= other->bottom()) ||
-      (p4.x >= other->left() && p4.x <= other->right() && p4.y >= other->top() && p4.y <= other->bottom())) {
-    return true;
+
+  if (p1.x >= other->left() && p1.x <= other->right()) {
+    if (p1.y >= other->top() && p1.y <= other->bottom())
+      return true;
   }
+
+  if (p2.x >= other->left() && p2.x <= other->right()) {
+    if (p2.y >= other->top() && p2.y <= other->bottom())
+      return true;
+  }
+
+  if (p3.x >= other->left() && p3.x <= other->right()) {
+    if (p3.y >= other->top() && p3.y <= other->bottom())
+      return true;
+  }
+
+  if (p4.x >= other->left() && p4.x <= other->right()) {
+    if (p4.y >= other->top() && p4.y <= other->bottom())
+      return true;
+  }
+
+  if (other->left() >= p1.x && other->left() <= p2.x) {
+    if (other->top() >= p1.y && other->top() <= p3.y)
+      return true;
+    if (other->bottom() >= p1.y && other->bottom() <= p3.y)
+      return true;
+  }
+
+  if (other->right() >= p1.x && other->right() <= p2.x) {
+    if (other->top() >= p1.y && other->top() <= p3.y)
+      return true;
+    if (other->bottom() >= p1.y && other->bottom() <= p3.y)
+      return true;
+  }
+
   return false;
 }
 

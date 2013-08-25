@@ -188,6 +188,15 @@ void init_audio() {
   sounds[2].setBuffer(sound_buffers[2]);
 }
 
+void reset_game() {
+  game_time = 10.f;
+  player->set_position(Point(300, 300));
+  player->set_alive();
+  player->reset();
+  game_mode = GAME_PLAY;
+  game_map->load_level(current_level, player, &camera, animations, tile_animations, sounds, game_entities);
+}
+
 void init_game()
 {
   init_graphics();
@@ -210,7 +219,7 @@ void init_game()
   game_mode = GAME_PLAY;
 
   game_map = new GameMap(&tile_helper);
-  game_map->load_level(current_level, player, &camera, animations, tile_animations, sounds, game_entities);
+  reset_game();
 }
 
 void deinitialize_game(sf::RenderWindow* window) {
@@ -410,12 +419,7 @@ void player_move_right(float delta) {
   player_collide_right(player_top_coords, player_bottom_coords, player_delta_top, player_delta_bottom);
 }
 
-void reset_game() {
-  game_time = 10.f;
-  player->set_position(Point(300, 300));
-  player->set_alive();
-  game_mode = GAME_PLAY;
-}
+
 
 void player_move() {
   player->fall();

@@ -55,6 +55,8 @@ int Player::get_state() {
 
 void Player::reset() {
   _state = 0;
+  _movement.x = 0;
+  _movement.y = 0;
 }
 
 bool Player::is_state_set(int state) {
