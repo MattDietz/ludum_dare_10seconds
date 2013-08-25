@@ -9,13 +9,15 @@ GameMap::~GameMap() {
   clear();
 }
 
-void GameMap::load_level(int level, Player* player, Camera* camera, Animation* tile_animations) {
+void GameMap::load_level(int level, Player* player, Camera* camera,Animation* animations, Animation* tile_animations,
+                         sf::Sound* sounds, std::list<Entity *> &game_entities) {
   clear();
   std::string map_path;
   std::stringstream map_stream;
   map_stream << "content/levels/level" << level;
   map_path = map_stream.str();
-  _game_map = load_map(map_path, player, camera, tile_animations, _width, _height);
+  _game_map = load_map(map_path, player, camera, animations, tile_animations, sounds,
+                       game_entities, _tile_helper, _width, _height);
 }
 
 Tile* GameMap::get_tile(int x, int y) {

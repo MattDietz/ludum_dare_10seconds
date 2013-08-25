@@ -210,7 +210,7 @@ void init_game()
   game_mode = GAME_PLAY;
 
   game_map = new GameMap(&tile_helper);
-  game_map->load_level(current_level, player, &camera, tile_animations);
+  game_map->load_level(current_level, player, &camera, animations, tile_animations, sounds, game_entities);
 }
 
 void deinitialize_game(sf::RenderWindow* window) {

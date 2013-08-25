@@ -1,6 +1,8 @@
 #include "level_loader.h"
 
-Tile*** load_map(std::string level_path, Player* player, Camera* camera, Animation* tile_animations, int& map_width, int& map_height) {
+Tile*** load_map(std::string level_path, Player* player, Camera* camera, Animation* animations,
+                 Animation* tile_animations, sf::Sound* sounds, std::list<Entity *>& game_entities,
+                 TileHelper* tile_helper, int& map_width, int& map_height) {
   std::cout << "Loading map data from " << level_path << std::endl;
   //I don't remember how to do this well, so...
 
@@ -51,13 +53,23 @@ Tile*** load_map(std::string level_path, Player* player, Camera* camera, Animati
     while (std::getline(line_stream, cell, ',')) {
       int map_tile = atoi(cell.c_str());
       if (map_tile == 4) {
+        //Floor spikes
         game_map[index_x][index_y] = new Tile(&tile_animations[map_tile-1], false, true);
+      } else if (map_tile == 5) {
+        //Battery
+        Battery* battery = new Battery(Rectangle(8, 8, 22, 28));
+        battery->set_frames(&animations[4]);
+        Point pos = tile_helper->fromTileCoords(index_x, index_y);
+        battery->set_position(pos.x, pos.y);
+        battery->set_pickup_sound(&sounds[1]);
+        game_entities.push_back(battery);
+        game_map[index_x][index_y] = new Tile();
       } else if (map_tile > 0) {
         game_map[index_x][index_y] = new Tile(&tile_animations[map_tile-1], false);
       } else {
         game_map[index_x][index_y] = new Tile();
       }
-      
+
       index_x++;
       if (index_x == map_width) {
         index_x = 0;
