@@ -9,6 +9,8 @@
 #include "config_lib/configitem.h"
 
 #include "animation.h"
+#include "battery.h"
+#include "collidable.h"
 #include "camera.h"
 #include "player.h"
 #include "scoundrel_utils.h"
@@ -16,12 +18,13 @@
 #include "tile_helper.h"
 
 //TODO: move away from all the globals. 
-const float WALK = 1;
-const float MAX_WALK = 4;
+const float WALK = 0.5f;
+const float MAX_WALK = 4.f;
+const float WALK_STOP = 1.2f;
 const int MOVE_DELTA = MAX_WALK;
-const float JUMP_SPEED = -18.0f;
+const float JUMP_SPEED = -20.0f;
 
-const float GRAVITY = 2.f;
+const float GRAVITY = 1.5f;
 const float TERMINAL_VELOCITY = 15.f;
 const int MAP_WIDTH = 20, MAP_HEIGHT = 20;
 const int TILE_WIDTH = 32, TILE_HEIGHT = 32;
@@ -41,10 +44,14 @@ Player* player;
 KeyState key_state;
 Camera camera;
 sf::Font game_font;
-sf::Clock fps_clock;
+sf::Clock fps_clock, game_clock;
+float game_time;
 sf::SoundBuffer* sound_buffers;
 sf::Sound* sounds;
-Animation* animations;
+Animation* animations, *tile_animations;
+
+//Linked list would be much more efficient overall but I don't care right now
+std::vector<Entity*> game_entities;
 
 int simple_map[20][20] = {
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -98,11 +105,15 @@ void init_map()
     for (int j=0; j < MAP_HEIGHT; j++) {
       int map_tile = simple_map[j][i];
       if (map_tile > 0) {
-        game_map[i][j] = new Tile(&animations[map_tile-1], false);
+        game_map[i][j] = new Tile(&tile_animations[map_tile-1], false);
       } else
         game_map[i][j] = new Tile();
     }
   }
+  Battery* battery = new Battery(Rectangle(8, 8, 22, 28));
+  battery->set_frames(&animations[4]);
+  battery->set_position(100, 400);
+  game_entities.push_back(battery);
 }
 
 void unload_map() {
@@ -121,21 +132,60 @@ sf::RenderWindow* init_sfml() {
 void init_tile_animations() {
   tile_sheet = load_image("content/tile_sheet.png");
   animations = new Animation[NUM_ANIMATIONS];
+  tile_animations = new Animation[NUM_ANIMATIONS];
 
   //Rock 1 Tile
-  animations[0].set_sprite_sheet(&tile_sheet);
-  animations[0].add_frame(sf::IntRect(32, 0, 32, 32));
-  animations[0].set_frame(0);
+  tile_animations[0].set_sprite_sheet(&tile_sheet);
+  tile_animations[0].add_frame(sf::IntRect(32, 0, 32, 32));
+  tile_animations[0].set_frame(0);
 
   //Rock 2 Tile
-  animations[1].set_sprite_sheet(&tile_sheet);
-  animations[1].add_frame(sf::IntRect(64, 0, 32, 32));
-  animations[1].set_frame(0);
+  tile_animations[1].set_sprite_sheet(&tile_sheet);
+  tile_animations[1].add_frame(sf::IntRect(64, 0, 32, 32));
+  tile_animations[1].set_frame(0);
 
   //Rock 1 Ground
+  tile_animations[2].set_sprite_sheet(&tile_sheet);
+  tile_animations[2].add_frame(sf::IntRect(224, 0, 32, 32));
+  tile_animations[2].set_frame(0);
+
+  //Player walk right
+  animations[0].set_sprite_sheet(&tile_sheet);
+  animations[0].add_frame(sf::IntRect(0, 32, 32, 32));
+  animations[0].add_frame(sf::IntRect(32, 32, 32, 32));
+  animations[0].add_frame(sf::IntRect(64, 32, 32, 32));
+  animations[0].add_frame(sf::IntRect(32, 32, 32, 32));
+  animations[0].set_frame_time(5);
+  animations[0].set_frame(0);
+
+  //Player walk left
+  animations[1].set_sprite_sheet(&tile_sheet);
+  animations[1].add_frame(sf::IntRect(96, 32, 32, 32));
+  animations[1].add_frame(sf::IntRect(128, 32, 32, 32));
+  animations[1].add_frame(sf::IntRect(156, 32, 32, 32));
+  animations[1].add_frame(sf::IntRect(128, 32, 32, 32));
+  animations[1].set_frame_time(5);
+  animations[1].set_frame(0);
+
+  //Player stand left
   animations[2].set_sprite_sheet(&tile_sheet);
-  animations[2].add_frame(sf::IntRect(224, 0, 32, 32));
+  animations[2].add_frame(sf::IntRect(96, 32, 32, 32));
   animations[2].set_frame(0);
+
+  //Player stand right
+  animations[3].set_sprite_sheet(&tile_sheet);
+  animations[3].add_frame(sf::IntRect(0, 32, 32, 32));
+  animations[3].set_frame(0);
+
+  //Battery
+  animations[4].set_sprite_sheet(&tile_sheet);
+  animations[4].add_frame(sf::IntRect(352, 0, 32, 32));
+  animations[4].add_frame(sf::IntRect(384, 0, 32, 32));
+  animations[4].add_frame(sf::IntRect(416, 0, 32, 32));
+  animations[4].add_frame(sf::IntRect(384, 0, 32, 32));
+  animations[4].set_frame_time(5);
+  animations[4].set_frame(0);
+
 }
 
 void init_graphics() {
@@ -154,6 +204,8 @@ void init_graphics() {
   sprites[3].setTexture(textures[3]);
 
   init_tile_animations();
+
+  game_font.loadFromFile("content/mensch.ttf");
 }
 
 void init_audio() {
@@ -169,15 +221,19 @@ void init_game()
   init_audio();
 
   player = new Player(&sprites[3], Point(300, 300), Rectangle(2, 4, 28, 30));
-  player->set_walk_speed(WALK, MAX_WALK);
+  player->set_walk_speed(WALK, MAX_WALK, WALK_STOP);
   player->set_movement(0, 0);
   player->set_fall_speed(GRAVITY, TERMINAL_VELOCITY);
   player->set_jump_speed(JUMP_SPEED);
+  player->set_walk_frames(&animations[1], &animations[0]);
+  player->set_stand_frames(&animations[2], &animations[3]);
 
   camera.set_absolute(0, 0);
   camera.set_window_size(WINDOW_WIDTH, WINDOW_HEIGHT);
   camera.set_window_snap(CAMERA_SNAP_X, CAMERA_SNAP_Y);
   camera.calculate_snap();
+
+  game_time = 10.f;
 }
 
 void deinitialize_game(sf::RenderWindow* window) {
@@ -188,6 +244,9 @@ void deinitialize_game(sf::RenderWindow* window) {
   delete[] sound_buffers;
   delete[] sounds;
   delete[] animations;
+  delete[] tile_animations;
+  for (int i=0; i < game_entities.size(); ++i)
+    delete game_entities[i];
 }
 
 void check_and_move_camera() {
@@ -443,14 +502,6 @@ void handle_events(sf::RenderWindow* window) {
   }
 }
 
-void handle_ai() {
-
-}
-
-void draw_ui(sf::RenderWindow* window) {
-
-}
-
 void display_framerate(sf::RenderWindow* window) {
   //Super basic framerate calculator.
   //
@@ -463,6 +514,25 @@ void display_framerate(sf::RenderWindow* window) {
   window->draw(test_text);
 }
 
+void draw_clock(sf::RenderWindow* window) {
+  char frame_string[10];
+  sprintf(frame_string, "%f\n", game_time);
+  sf::Text test_text(frame_string, game_font);
+  test_text.setPosition(100, 20);
+  window->draw(test_text);
+}
+
+void collide_objects() {
+  Collidable temp;
+  Rectangle player_rect = player->get_bounding_rect();
+  for (int i=0; i < game_entities.size(); ++i) {
+    Rectangle other_rect = game_entities[i]->get_bounding_rect();
+    if (player_rect.intersects(&other_rect)) {
+      dynamic_cast<Collidable *>(game_entities[i])->perform_collision_action(player);
+    }
+  }
+}
+
 void game_loop(sf::RenderWindow* window) {
   int decay = 30;
   while (window->isOpen()) {
@@ -470,10 +540,9 @@ void game_loop(sf::RenderWindow* window) {
     Point camera_pos = view.upper_left();
 
     handle_events(window);
-    handle_ai();
 
-    //Replace later with all entity move
     player_move();
+    collide_objects();
 
     check_and_move_camera();
 
@@ -503,14 +572,24 @@ void game_loop(sf::RenderWindow* window) {
         game_map[j][i]->draw(window, Point(j * TILE_WIDTH - camera_pos.x, i * TILE_HEIGHT - camera_pos.y));
       }
     }
+
+    for (int i=0; i < game_entities.size(); ++i) {
+      game_entities[i]->draw(window, camera_pos);
+    }
+
     player->draw(window, camera_pos);
 
     if (show_fps)
       display_framerate(window);
+    draw_clock(window);
 
-    draw_ui(window);
     window->display();
     framerate = fps_clock.restart().asSeconds();
+    game_time -= framerate;
+    if (game_time <= 0.f) {
+      return;
+    }
+    std::cout << game_time << std::endl;
   }
 }
 

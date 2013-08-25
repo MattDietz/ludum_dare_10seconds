@@ -1,10 +1,10 @@
-#include <iostream>
 #include <cmath>
 
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
 #include <SFML/Window.hpp>
 
+#include "animation.h"
 #include "entity.h"
 #include "entity_states.h"
 #include "scoundrel_utils.h"
@@ -20,6 +20,10 @@ public:
   void draw(sf::RenderWindow * window, Point camera);
   void move(int x, int y);
 
+  //Animation boilerplate
+  void set_stand_frames(Animation* left, Animation* right);
+  void set_walk_frames(Animation* left, Animation* right);
+
   //Player actions
   void jump();
   void move(Point delta);
@@ -31,7 +35,7 @@ public:
   void unset_state(int state);
 
   //Player walk handlers
-  void set_walk_speed(float walk, float max_walk);
+  void set_walk_speed(float walk, float max_walk, float walk_stop);
   void walk_left();
   void walk_right();
   void stop_walking();
@@ -46,9 +50,16 @@ private:
   int _state;
   sf::Sprite* _sprite;
   Rectangle _bounding_rect;
-  float _walk, _max_walk;
+  float _walk, _max_walk, _walk_stop;
   float _fall_speed, _max_fall_speed;
   float _jump_speed;
+
+  bool _facing_right;
+
+  //Animations
+  Animation* _stand_left, *_stand_right;
+  Animation* _walk_left;
+  Animation* _walk_right;
 };
 
 #endif

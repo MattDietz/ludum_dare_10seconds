@@ -12,7 +12,7 @@ public:
   Entity();
   virtual ~Entity();
   virtual Point position()=0;
-  virtual void draw(sf::RenderWindow* window);
+  virtual void draw(sf::RenderWindow* window, Point camera_pos)=0;
   virtual Rectangle get_bounding_rect()=0;
   virtual void apply_movement(float mag_x, float mag_y);
   virtual void set_movement(float mag_x, float mag_y);

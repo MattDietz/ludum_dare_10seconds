@@ -1,0 +1,30 @@
+#ifndef SCOUNDREL_BATTERY
+#define SCOUNDREL_BATTERY
+
+#include <SFML/Graphics.hpp>
+#include <SFML/System.hpp>
+#include <SFML/Window.hpp>
+
+#include "animation.h"
+#include "collidable.h"
+#include "entity.h"
+#include "rect.h"
+
+class Battery : public Entity, public Collidable {
+public:
+  Battery(Rectangle bounding_rect);
+  void draw(sf::RenderWindow * window, Point camera);
+  void set_frames(Animation* frames);
+  Rectangle get_bounding_rect();
+  void set_position(float x, float y);
+  Point position();
+  void perform_collision_action(Player* player);
+
+private:
+  Animation* _frames;
+  Point _position;
+  Rectangle _bounding_rect;
+
+};
+
+#endif

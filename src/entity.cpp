@@ -13,9 +13,6 @@ Entity::~Entity() {
   std::cout << "Deleting Entity" << std::endl;
 }
 
-void Entity::draw(sf::RenderWindow* window) {
-}
-
 void Entity::apply_movement(float mag_x, float mag_y) {
   _movement.x += mag_x;
   _movement.y += mag_y;
