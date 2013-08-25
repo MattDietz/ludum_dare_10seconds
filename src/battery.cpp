@@ -35,6 +35,7 @@ Rectangle Battery::get_bounding_rect() {
   return Rectangle(left, top, right, bottom);
 }
 
-void Battery::perform_collision_action(Player* player) {
-  std::cout << "Player picks up battery" << std::endl;
+void Battery::perform_collision_action(Player* player, float& game_time) {
+  game_time += 10.0f;
+  kill();
 }

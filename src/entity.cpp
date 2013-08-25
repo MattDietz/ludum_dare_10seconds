@@ -5,7 +5,7 @@
 #include "entity.h"
 #include "entity_states.h"
 
-Entity::Entity() {
+Entity::Entity():_is_alive(true) {
   std::cout << "Entity Constructor" << std::endl;
 }
 
@@ -25,4 +25,12 @@ void Entity::set_movement(float mag_x, float mag_y) {
 
 sf::Vector2f Entity::get_movement() {
   return _movement;
+}
+
+void Entity::kill() {
+  _is_alive = false;
+}
+
+bool Entity::is_alive() {
+  return _is_alive;
 }

@@ -18,7 +18,7 @@ public:
   Rectangle get_bounding_rect();
   void set_position(float x, float y);
   Point position();
-  void perform_collision_action(Player* player);
+  void perform_collision_action(Player* player, float& game_time);
 
 private:
   Animation* _frames;

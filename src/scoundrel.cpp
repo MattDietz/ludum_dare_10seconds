@@ -1,5 +1,5 @@
 #include <iostream>
-#include <vector>
+#include <list>
 
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
@@ -51,7 +51,7 @@ sf::Sound* sounds;
 Animation* animations, *tile_animations;
 
 //Linked list would be much more efficient overall but I don't care right now
-std::vector<Entity*> game_entities;
+std::list<Entity*> game_entities;
 
 int simple_map[20][20] = {
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -245,8 +245,9 @@ void deinitialize_game(sf::RenderWindow* window) {
   delete[] sounds;
   delete[] animations;
   delete[] tile_animations;
-  for (int i=0; i < game_entities.size(); ++i)
-    delete game_entities[i];
+  for (std::list<Entity *>::iterator it=game_entities.begin(); it != game_entities.end(); ++it) {
+    delete *it;
+  }
 }
 
 void check_and_move_camera() {
@@ -515,7 +516,7 @@ void display_framerate(sf::RenderWindow* window) {
 }
 
 void draw_clock(sf::RenderWindow* window) {
-  char frame_string[10];
+  char frame_string[20];
   sprintf(frame_string, "%f\n", game_time);
   sf::Text test_text(frame_string, game_font);
   test_text.setPosition(100, 20);
@@ -525,10 +526,14 @@ void draw_clock(sf::RenderWindow* window) {
 void collide_objects() {
   Collidable temp;
   Rectangle player_rect = player->get_bounding_rect();
-  for (int i=0; i < game_entities.size(); ++i) {
-    Rectangle other_rect = game_entities[i]->get_bounding_rect();
+  for (std::list<Entity *>::iterator it=game_entities.begin(); it != game_entities.end(); ++it) {
+    Rectangle other_rect = (*it)->get_bounding_rect();
     if (player_rect.intersects(&other_rect)) {
-      dynamic_cast<Collidable *>(game_entities[i])->perform_collision_action(player);
+      Entity* game_entity = (*it);
+      dynamic_cast<Collidable *>(game_entity)->perform_collision_action(player, game_time);
+      if (!game_entity->is_alive()) {
+        game_entities.erase(it);
+      }
     }
   }
 }
@@ -573,8 +578,8 @@ void game_loop(sf::RenderWindow* window) {
       }
     }
 
-    for (int i=0; i < game_entities.size(); ++i) {
-      game_entities[i]->draw(window, camera_pos);
+    for (std::list<Entity *>::iterator it=game_entities.begin(); it != game_entities.end(); ++it) {
+      (*it)->draw(window, camera_pos);
     }
 
     player->draw(window, camera_pos);
@@ -589,7 +594,6 @@ void game_loop(sf::RenderWindow* window) {
     if (game_time <= 0.f) {
       return;
     }
-    std::cout << game_time << std::endl;
   }
 }
 
