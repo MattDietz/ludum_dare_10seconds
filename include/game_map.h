@@ -19,7 +19,7 @@ public:
   GameMap(TileHelper* tile_helper);
   ~GameMap();
   Tile* get_tile(int x, int y);
-  void load_level(int level, Player* player, Camera* camera, Animation* animations, Animation* tile_animations,
+  void load_level(std::string proc_path, int level, Player* player, Camera* camera, Animation* animations, Animation* tile_animations,
                   sf::Sound* sounds, std::list<Entity *>&game_entities);
   void draw(sf::RenderWindow* window, Point camera_pos, Point draw_start, Point draw_end);
   void clear();

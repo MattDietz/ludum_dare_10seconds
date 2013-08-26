@@ -1,5 +1,9 @@
 #include <iostream>
 #include <list>
+#include <sstream>
+#include <string>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
@@ -54,6 +58,7 @@ sf::Sound* sounds;
 Animation* animations, *tile_animations;
 game_modes game_mode;
 int game_start_level, current_level, total_levels;
+std::string proc_path;
 
 //Linked list would be much more efficient overall but I don't care right now
 std::list<Entity*> game_entities;
@@ -62,8 +67,16 @@ float framerate = 0.f;
 bool show_fps = false;
 TileHelper tile_helper(TILE_WIDTH, TILE_HEIGHT);
 
+std::string full_path(std::string file_path)
+{
+  std::stringstream final_path;
+  final_path << proc_path << "/" << file_path;
+  std::cout << final_path.str() << std::endl;
+  return final_path.str();
+}
+
 void load_config(int argc, char ** argv) {
-  configlib::configfile config("10second.conf");
+  configlib::configfile config(full_path("10second.conf"));
   configlib::configitem<int> window_width(config, "main", "int window_width", "height=", 1024);
   configlib::configitem<int> window_height(config, "main", "int window_height", "width=", 768);
   configlib::configitem<int> start_level(config, "main", "int start_level", "start_level=", 1);
@@ -94,8 +107,9 @@ sf::RenderWindow* init_sfml() {
   return game_window;
 }
 
+
 void init_tile_animations() {
-  tile_sheet = load_image("content/tile_sheet.png");
+  tile_sheet = load_image(full_path("tile_sheet.png"));
   animations = new Animation[NUM_ANIMATIONS];
   tile_animations = new Animation[NUM_ANIMATIONS];
 
@@ -202,19 +216,19 @@ void init_graphics() {
 
   init_tile_animations();
 
-  game_font.loadFromFile("content/digital_tech.otf");
+  game_font.loadFromFile(full_path("digital_tech.otf"));
 }
 
 void init_audio() {
   sound_buffers = new sf::SoundBuffer[5];
   sounds = new sf::Sound[5];
-  sound_buffers[0].loadFromFile("content/jump.wav");
+  sound_buffers[0].loadFromFile(full_path("jump.wav"));
   sounds[0].setBuffer(sound_buffers[0]);
 
-  sound_buffers[1].loadFromFile("content/battery.wav");
+  sound_buffers[1].loadFromFile(full_path("battery.wav"));
   sounds[1].setBuffer(sound_buffers[1]);
 
-  sound_buffers[2].loadFromFile("content/death.wav");
+  sound_buffers[2].loadFromFile(full_path("death.wav"));
   sounds[2].setBuffer(sound_buffers[2]);
 }
 
@@ -234,7 +248,7 @@ void reset_game(bool hard=false) {
   player->reset();
   clear_game_entities();
   game_mode = GAME_NEXT_LEVEL;
-  game_map->load_level(current_level, player, &camera, animations, tile_animations, sounds, game_entities);
+  game_map->load_level(proc_path, current_level, player, &camera, animations, tile_animations, sounds, game_entities);
   player->walk_right();
   framerate = fps_clock.restart().asSeconds();
 }
@@ -736,6 +750,14 @@ void game_loop(sf::RenderWindow* window) {
 
 int main(int argc, char ** argv)
 {
+  char full_path[1024];
+  realpath(argv[0], full_path);
+  std::cout << full_path << std::endl;
+
+  proc_path = full_path;
+  unsigned found = proc_path.find_last_of("/");
+  proc_path = proc_path.substr(0, found);
+
   load_config(argc, argv);
   sf::RenderWindow* window = init_sfml();
   window->setFramerateLimit(FRAMERATE_LIMIT);
