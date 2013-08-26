@@ -236,6 +236,7 @@ void reset_game(bool hard=false) {
   game_mode = GAME_NEXT_LEVEL;
   game_map->load_level(current_level, player, &camera, animations, tile_animations, sounds, game_entities);
   player->walk_right();
+  framerate = fps_clock.restart().asSeconds();
 }
 
 void init_game()
@@ -502,10 +503,6 @@ void handle_events(sf::RenderWindow* window) {
   sf::Event event;
   while (window->pollEvent(event)) {
     if (event.type == sf::Event::KeyPressed) {
-      if (game_mode == GAME_NEXT_LEVEL) {
-        game_mode = GAME_PLAY;
-        return;
-      }
 
       if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
         key_state.left_pressed = true;
@@ -520,6 +517,9 @@ void handle_events(sf::RenderWindow* window) {
           return;
         } else if (game_mode == GAME_WIN) {
           reset_game(true);
+          return;
+        } else if (game_mode == GAME_NEXT_LEVEL) {
+          game_mode = GAME_PLAY;
           return;
         }
         key_state.space_pressed = true;
@@ -662,6 +662,7 @@ void game_loop(sf::RenderWindow* window) {
       draw_win_screen(window);
     } else if (game_mode == GAME_NEXT_LEVEL) {
       draw_next_level_screen(window);
+      framerate = fps_clock.restart().asSeconds();
     } else if (game_mode == GAME_PLAY) {
       Rectangle view = camera.get_view_rect();
       Point camera_pos = view.upper_left();
