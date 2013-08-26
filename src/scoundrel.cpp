@@ -35,7 +35,7 @@ const int NUM_ANIMATIONS=20;
 
 // Impleent a camera/view class
 int WINDOW_WIDTH, WINDOW_HEIGHT;
-const float CAMERA_SNAP_X = 0.2f, CAMERA_SNAP_Y = 0.15f;
+const float CAMERA_SNAP_X = 0.2f, CAMERA_SNAP_Y = 0.23f;
 
 //I really hate all these globals. With more time I'd actually write some decent code
 GameMap* game_map;
@@ -614,11 +614,26 @@ void draw_win_screen(sf::RenderWindow* window) {
 
 void draw_next_level_screen(sf::RenderWindow* window) {
   char level_string[100];
+  int offset = 100;
+
   sprintf(level_string, "Level %d", current_level);
   sf::Text next_level_text(level_string, game_font);
   next_level_text.setCharacterSize(72);
   next_level_text.setPosition(WINDOW_WIDTH / 2 - 180, WINDOW_HEIGHT / 2);
   window->draw(next_level_text);
+
+  if (current_level == total_levels) {
+    sf::Text final_text("FINAL LEVEL", game_font);
+    final_text.setCharacterSize(72);
+    final_text.setPosition(WINDOW_WIDTH / 2 - 230, (WINDOW_HEIGHT / 2) + offset);
+    window->draw(final_text);
+    offset = 200;
+  }
+
+  sf::Text play_text("Press SPACE BAR to play", game_font);
+  play_text.setCharacterSize(36);
+  play_text.setPosition(WINDOW_WIDTH / 2 - 250, (WINDOW_HEIGHT / 2) + offset);
+  window->draw(play_text);
 }
 
 void collide_objects() {
