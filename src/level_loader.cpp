@@ -3,7 +3,6 @@
 Tile*** load_map(std::string level_path, Player* player, Camera* camera, Animation* animations,
                  Animation* tile_animations, sf::Sound* sounds, std::list<Entity *>& game_entities,
                  TileHelper* tile_helper, int& map_width, int& map_height) {
-  std::cout << "Loading map data from " << level_path << std::endl;
   //I don't remember how to do this well, so...
 
   std::ifstream map_data(level_path.c_str());
@@ -63,7 +62,7 @@ Tile*** load_map(std::string level_path, Player* player, Camera* camera, Animati
         Battery* battery = new Battery(Rectangle(8, 8, 22, 28));
         battery->set_frames(&animations[4]);
         Point pos = tile_helper->fromTileCoords(index_x, index_y);
-        battery->set_position(pos.x, pos.y);
+        battery->set_position(pos);
         battery->set_pickup_sound(&sounds[1]);
         game_entities.push_back(battery);
         game_map[index_x][index_y] = new Tile();
@@ -75,7 +74,7 @@ Tile*** load_map(std::string level_path, Player* player, Camera* camera, Animati
         else
           exit_arrow->set_frames(&animations[6]);
         Point pos = tile_helper->fromTileCoords(index_x, index_y);
-        exit_arrow->set_position(pos.x, pos.y);
+        exit_arrow->set_position(pos);
         exit_arrow->set_pickup_sound(&sounds[1]);
         game_entities.push_back(exit_arrow);
         game_map[index_x][index_y] = new Tile();
@@ -96,6 +95,5 @@ Tile*** load_map(std::string level_path, Player* player, Camera* camera, Animati
   }
   player->set_position(Point(player_x, player_y));
   camera->set_absolute(camera_x, camera_y);
-  std::cout << "Finished loading " << map_width << "x" << map_height << std::endl;
   return game_map;
 }

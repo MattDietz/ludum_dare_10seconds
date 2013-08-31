@@ -1,7 +1,6 @@
 #ifndef SCOUNDREL_LEVEL_LOADER
 #define SCOUNDREL_LEVEL_LOADER
 
-#include <iostream>
 #include <list>
 #include <string>
 #include <sstream>

@@ -12,6 +12,10 @@ Entity::~Entity() {
   std::cout << "Deleting Entity" << std::endl;
 }
 
+void Entity::set_frames(Animation* frames) {
+  _frames = frames;
+}
+
 void Entity::apply_movement(float mag_x, float mag_y) {
   _movement.x += mag_x;
   _movement.y += mag_y;
@@ -40,4 +44,21 @@ void Entity::set_alive() {
 
 void Entity::set_position(Point position) {
   _position = position;
+}
+
+void Entity::set_position(float px, float py) {
+  _position.x = px;
+  _position.y = py;
+}
+
+Point Entity::position() {
+  return _position;
+}
+
+Rectangle Entity::get_bounding_rect() {
+  float left = _position.x + _bounding_rect.left();
+  float top = _position.y + _bounding_rect.top();
+  float right = _position.x + _bounding_rect.right();
+  float bottom = _position.y + _bounding_rect.bottom();
+  return Rectangle(left, top, right, bottom);
 }

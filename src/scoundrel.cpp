@@ -9,8 +9,8 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 
-#include "config_lib/configfile.h"
-#include "config_lib/configitem.h"
+#include "configfile.h"
+#include "configitem.h"
 
 #include "animation.h"
 #include "battery.h"
@@ -302,15 +302,16 @@ void check_and_move_camera() {
   cam_snap_horz = camera.point_snap_horizontal(player_coords);
   cam_snap_vert = camera.point_snap_vertical(player_coords);
 
-  if (cam_snap_horz == Camera::SNAP_LEFT) {
+  sf::Vector2f player_move = player->get_movement();
+  if (player_move.x < 0 && cam_snap_horz == Camera::SNAP_LEFT) {
     camera.move(player->get_movement().x, 0);
-  } else if (cam_snap_horz == Camera::SNAP_RIGHT) {
+  } else if (player_move.x > 0 && cam_snap_horz == Camera::SNAP_RIGHT) {
     camera.move(player->get_movement().x, 0);
   }
 
-  if (cam_snap_vert == Camera::SNAP_TOP) {
+  if (player_move.y < 0 && cam_snap_vert == Camera::SNAP_TOP) {
     camera.move(0, player->get_movement().y);
-  } else if (cam_snap_vert == Camera::SNAP_BOTTOM) {
+  } else if (player_move.y > 0 && cam_snap_vert == Camera::SNAP_BOTTOM) {
     camera.move(0, player->get_movement().y);
   }
 }
@@ -370,7 +371,7 @@ void player_collide_bottom(Point left, Point right, Point left_delta, Point righ
        * Still falling -> do nothing
        * landed -> unset(ENTITY_JUMPING) - landed counts as 1 px above the tile
        */
-      if (delta_y <= 1.f) {
+      if (delta_y == 1.f) {
         player->unset_state(ENTITY_JUMPING);
         player->set_movement(player_movement.x, 0);
       } else if (delta_y > 1.f && delta_y <= player_movement.y) {
@@ -408,8 +409,11 @@ void player_collide_left(Point top, Point bottom, Point top_delta, Point bottom_
       float delta_x = float(top.x - (tile_world.x + TILE_WIDTH));
       if (delta_x <= 0.f) {
         player->set_movement(0, player_movement.y);
-      } else if (delta_x > 0.f && -delta_x >= player_movement.x) {
-        player->set_movement(0, player_movement.y);
+      } else if (delta_x > 0.f) {
+        if (-delta_x >= player_movement.x)
+          player->set_movement(-delta_x, player_movement.y);
+        else
+          player->set_movement(0, player_movement.y);
       }
     }
   }
@@ -425,6 +429,8 @@ void player_collide_right(Point top, Point bottom, Point top_delta, Point bottom
 
   Point player_tile_bottom = tile_helper.toTileCoords(bottom_delta);
   for (int i = (int)player_tile_top.y; i <= (int)player_tile_bottom.y; ++i) {
+    Point pos = player->position();
+    Rectangle rect = player->get_bounding_rect();
     int ptt = (int)player_tile_top.x;
     if (game_map->get_tile(ptt, i)->is_deadly()) {
       player->kill();
@@ -436,8 +442,11 @@ void player_collide_right(Point top, Point bottom, Point top_delta, Point bottom
       float delta_x = float(tile_world.x - top.x);
       if (delta_x <= 0.f) {
         player->set_movement(0, player_movement.y);
-      } else if (delta_x > 0.f && delta_x > player_movement.x) {
-        player->set_movement(delta_x - 1, player_movement.y);
+      } else if (delta_x > 0.f) {
+        if (delta_x > player_movement.x)
+          player->set_movement(delta_x, player_movement.y);
+        else
+          player->set_movement(0.f, player_movement.y);
       }
       return;
     }
