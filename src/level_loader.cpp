@@ -1,8 +1,8 @@
 #include "level_loader.h"
 
-Tile*** load_map(std::string level_path, Player* player, Camera* camera, Animation* animations,
-                 Animation* tile_animations, sf::Sound* sounds, std::list<Entity *>& game_entities,
-                 TileHelper* tile_helper, int& map_width, int& map_height) {
+Tile*** load_map(std::string level_path, Player* player, Camera* camera, std::map<int, Animation>* animation_map,
+                 sf::Sound* sounds, std::list<Entity *>& game_entities, TileHelper* tile_helper,
+                 int& map_width, int& map_height) {
   //I don't remember how to do this well, so...
 
   std::ifstream map_data(level_path.c_str());
@@ -51,41 +51,38 @@ Tile*** load_map(std::string level_path, Player* player, Camera* camera, Animati
     std::string cell;
     while (std::getline(line_stream, cell, ',')) {
       int map_tile = atoi(cell.c_str());
-      if (map_tile == 4) {
-        //Floor Spikes
-        game_map[index_x][index_y] = new Tile(&tile_animations[map_tile-1], false, true);
-      } else if (map_tile > 6 && map_tile < 10) {
-        //Other Spikes - Sloppy planning FTL
-        game_map[index_x][index_y] = new Tile(&tile_animations[map_tile - 3], false, true);
-      } else if (map_tile == 5) {
+      /* Let's reorganize this:
+       *
+       * All blocking tiles are 1-99
+       * All deadly tiles are 100-199
+       * All decorative tiles are 200-299
+       * All game entities are 300+
+       */
+
+      if (map_tile >= 100 && map_tile <= 199)
+        game_map[index_x][index_y] = new Tile(&(*animation_map)[map_tile], false, true);
+      else if (map_tile == 304) {
         //Battery
         Battery* battery = new Battery(Rectangle(8, 8, 22, 28));
-        battery->set_frames(&animations[4]);
+        battery->set_frames(&(*animation_map)[map_tile]);
         Point pos = tile_helper->fromTileCoords(index_x, index_y);
         battery->set_position(pos);
         battery->set_pickup_sound(&sounds[1]);
         game_entities.push_back(battery);
         game_map[index_x][index_y] = new Tile();
-      } else if (map_tile == 6 || map_tile == 11) {
-        //SOOOO Nasty, but < 2 hours left, I don't care
+      } else if (map_tile == 305 || map_tile == 306) {
         ExitArrow* exit_arrow = new ExitArrow(Rectangle(0, 0, 32, 32));
-        if (map_tile == 6)
-          exit_arrow->set_frames(&animations[5]);
-        else
-          exit_arrow->set_frames(&animations[6]);
+        exit_arrow->set_frames(&(*animation_map)[map_tile]);
         Point pos = tile_helper->fromTileCoords(index_x, index_y);
         exit_arrow->set_position(pos);
         exit_arrow->set_pickup_sound(&sounds[1]);
         game_entities.push_back(exit_arrow);
         game_map[index_x][index_y] = new Tile();
-      } else if (map_tile == 10) {
-        game_map[index_x][index_y] = new Tile(&tile_animations[map_tile-3], false);
-      } else if (map_tile > 0) {
-        game_map[index_x][index_y] = new Tile(&tile_animations[map_tile-1], false);
+      } else if (map_tile > 0 && map_tile <= 99) {
+        game_map[index_x][index_y] = new Tile(&(*animation_map)[map_tile], false);
       }  else {
         game_map[index_x][index_y] = new Tile();
       }
-
       index_x++;
       if (index_x == map_width) {
         index_x = 0;

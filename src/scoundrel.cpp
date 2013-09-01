@@ -1,5 +1,6 @@
 #include <iostream>
 #include <list>
+#include <map>
 #include <sstream>
 #include <string>
 #include <stdlib.h>
@@ -9,8 +10,13 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 
+#ifndef SCOUNDREL_COMMAND_LINE
 #include "configfile.h"
 #include "configitem.h"
+#else
+#include "config_lib/configfile.h"
+#include "config_lib/configitem.h"
+#endif
 
 #include "animation.h"
 #include "battery.h"
@@ -24,7 +30,7 @@
 
 enum game_modes {GAME_PLAY, GAME_END, GAME_WIN, GAME_NEXT_LEVEL};
 
-//TODO: move away from all the globals. 
+//TODO: move away from all the globals.
 const float WALK = 0.25f;
 const float MAX_WALK = 4.f;
 const float WALK_STOP = 1.2f;
@@ -55,7 +61,8 @@ sf::Clock fps_clock, game_clock;
 float game_time;
 sf::SoundBuffer* sound_buffers;
 sf::Sound* sounds;
-Animation* animations, *tile_animations;
+std::map<int, Animation> animation_map;
+
 game_modes game_mode;
 int game_start_level, current_level, total_levels;
 std::string proc_path;
@@ -110,103 +117,118 @@ sf::RenderWindow* init_sfml() {
 
 void init_tile_animations() {
   tile_sheet = load_image(full_path("tile_sheet.png"));
-  animations = new Animation[NUM_ANIMATIONS];
-  tile_animations = new Animation[NUM_ANIMATIONS];
+
+  //TODO: offload these into a config file later
 
   //Rock 1 Tile
-  tile_animations[0].set_sprite_sheet(&tile_sheet);
-  tile_animations[0].add_frame(sf::IntRect(32, 0, 32, 32));
-  tile_animations[0].set_frame(0);
+  animation_map[1] = Animation();
+  animation_map[1].set_sprite_sheet(&tile_sheet);
+  animation_map[1].add_frame(sf::IntRect(32, 0, 32, 32));
+  animation_map[1].set_frame(0);
 
   //Rock 2 Tile
-  tile_animations[1].set_sprite_sheet(&tile_sheet);
-  tile_animations[1].add_frame(sf::IntRect(64, 0, 32, 32));
-  tile_animations[1].set_frame(0);
+  animation_map[2] = Animation();
+  animation_map[2].set_sprite_sheet(&tile_sheet);
+  animation_map[2].add_frame(sf::IntRect(64, 0, 32, 32));
+  animation_map[2].set_frame(0);
 
   //Rock 1 Ground
-  tile_animations[2].set_sprite_sheet(&tile_sheet);
-  tile_animations[2].add_frame(sf::IntRect(224, 0, 32, 32));
-  tile_animations[2].set_frame(0);
-
-  //Brown Spikes
-  tile_animations[3].set_sprite_sheet(&tile_sheet);
-  tile_animations[3].add_frame(sf::IntRect(160, 0, 32, 32));
-  tile_animations[3].set_frame(0);
-
-  //Ceiling Brown Spikes
-  tile_animations[4].set_sprite_sheet(&tile_sheet);
-  tile_animations[4].add_frame(sf::IntRect(0, 96, 32, 32));
-  tile_animations[4].set_frame(0);
-
-  //Right Facing Brown Spikes
-  tile_animations[5].set_sprite_sheet(&tile_sheet);
-  tile_animations[5].add_frame(sf::IntRect(32, 96, 32, 32));
-  tile_animations[5].set_frame(0);
-
-  //left Facing Brown Spikes
-  tile_animations[6].set_sprite_sheet(&tile_sheet);
-  tile_animations[6].add_frame(sf::IntRect(64, 96, 32, 32));
-  tile_animations[6].set_frame(0);
+  animation_map[3] = Animation();
+  animation_map[3].set_sprite_sheet(&tile_sheet);
+  animation_map[3].add_frame(sf::IntRect(224, 0, 32, 32));
+  animation_map[3].set_frame(0);
 
   //Dead Grass
-  tile_animations[7].set_sprite_sheet(&tile_sheet);
-  tile_animations[7].add_frame(sf::IntRect(0, 0, 32, 32));
-  tile_animations[7].set_frame(0);
+  animation_map[4] = Animation();
+  animation_map[4].set_sprite_sheet(&tile_sheet);
+  animation_map[4].add_frame(sf::IntRect(0, 0, 32, 32));
+  animation_map[4].set_frame(0);
 
-  //Player walk right
-  animations[0].set_sprite_sheet(&tile_sheet);
-  animations[0].add_frame(sf::IntRect(0, 32, 32, 32));
-  animations[0].add_frame(sf::IntRect(32, 32, 32, 32));
-  animations[0].add_frame(sf::IntRect(64, 32, 32, 32));
-  animations[0].add_frame(sf::IntRect(32, 32, 32, 32));
-  animations[0].set_frame_time(5);
-  animations[0].set_frame(0);
+  //Brown Spikes
+  animation_map[100] = Animation();
+  animation_map[100].set_sprite_sheet(&tile_sheet);
+  animation_map[100].add_frame(sf::IntRect(160, 0, 32, 32));
+  animation_map[100].set_frame(0);
+
+  //Ceiling Brown Spikes
+  animation_map[101] = Animation();
+  animation_map[101].set_sprite_sheet(&tile_sheet);
+  animation_map[101].add_frame(sf::IntRect(0, 96, 32, 32));
+  animation_map[101].set_frame(0);
+
+  //Right Facing Brown Spikes
+  animation_map[102] = Animation();
+  animation_map[102].set_sprite_sheet(&tile_sheet);
+  animation_map[102].add_frame(sf::IntRect(32, 96, 32, 32));
+  animation_map[102].set_frame(0);
+
+  //left Facing Brown Spikes
+  animation_map[103] = Animation();
+  animation_map[103].set_sprite_sheet(&tile_sheet);
+  animation_map[103].add_frame(sf::IntRect(64, 96, 32, 32));
+  animation_map[103].set_frame(0);
 
   //Player walk left
-  animations[1].set_sprite_sheet(&tile_sheet);
-  animations[1].add_frame(sf::IntRect(96, 32, 32, 32));
-  animations[1].add_frame(sf::IntRect(128, 32, 32, 32));
-  animations[1].add_frame(sf::IntRect(160, 32, 32, 32));
-  animations[1].add_frame(sf::IntRect(128, 32, 32, 32));
-  animations[1].set_frame_time(5);
-  animations[1].set_frame(0);
+  animation_map[300] = Animation();
+  animation_map[300].set_sprite_sheet(&tile_sheet);
+  animation_map[300].add_frame(sf::IntRect(96, 32, 32, 32));
+  animation_map[300].add_frame(sf::IntRect(128, 32, 32, 32));
+  animation_map[300].add_frame(sf::IntRect(160, 32, 32, 32));
+  animation_map[300].add_frame(sf::IntRect(128, 32, 32, 32));
+  animation_map[300].set_frame_time(5);
+  animation_map[300].set_frame(0);
+
+  //Player walk right
+  animation_map[301] = Animation();
+  animation_map[301].set_sprite_sheet(&tile_sheet);
+  animation_map[301].add_frame(sf::IntRect(0, 32, 32, 32));
+  animation_map[301].add_frame(sf::IntRect(32, 32, 32, 32));
+  animation_map[301].add_frame(sf::IntRect(64, 32, 32, 32));
+  animation_map[301].add_frame(sf::IntRect(32, 32, 32, 32));
+  animation_map[301].set_frame_time(5);
+  animation_map[301].set_frame(0);
 
   //Player stand left
-  animations[2].set_sprite_sheet(&tile_sheet);
-  animations[2].add_frame(sf::IntRect(96, 32, 32, 32));
-  animations[2].set_frame(0);
+  animation_map[302] = Animation();
+  animation_map[302].set_sprite_sheet(&tile_sheet);
+  animation_map[302].add_frame(sf::IntRect(96, 32, 32, 32));
+  animation_map[302].set_frame(0);
 
   //Player stand right
-  animations[3].set_sprite_sheet(&tile_sheet);
-  animations[3].add_frame(sf::IntRect(0, 32, 32, 32));
-  animations[3].set_frame(0);
+  animation_map[303] = Animation();
+  animation_map[303].set_sprite_sheet(&tile_sheet);
+  animation_map[303].add_frame(sf::IntRect(0, 32, 32, 32));
+  animation_map[303].set_frame(0);
 
   //Battery
-  animations[4].set_sprite_sheet(&tile_sheet);
-  animations[4].add_frame(sf::IntRect(352, 0, 32, 32));
-  animations[4].add_frame(sf::IntRect(384, 0, 32, 32));
-  animations[4].add_frame(sf::IntRect(416, 0, 32, 32));
-  animations[4].add_frame(sf::IntRect(384, 0, 32, 32));
-  animations[4].set_frame_time(5);
-  animations[4].set_frame(0);
+  animation_map[304] = Animation();
+  animation_map[304].set_sprite_sheet(&tile_sheet);
+  animation_map[304].add_frame(sf::IntRect(352, 0, 32, 32));
+  animation_map[304].add_frame(sf::IntRect(384, 0, 32, 32));
+  animation_map[304].add_frame(sf::IntRect(416, 0, 32, 32));
+  animation_map[304].add_frame(sf::IntRect(384, 0, 32, 32));
+  animation_map[304].set_frame_time(5);
+  animation_map[304].set_frame(0);
 
   //Exit Arrow
-  animations[5].set_sprite_sheet(&tile_sheet);
-  animations[5].add_frame(sf::IntRect(0, 64, 32, 32));
-  animations[5].add_frame(sf::IntRect(32, 64, 32, 32));
-  animations[5].add_frame(sf::IntRect(64, 64, 32, 32));
-  animations[5].add_frame(sf::IntRect(96, 64, 32, 32));
-  animations[5].set_frame_time(5);
-  animations[5].set_frame(0);
+  animation_map[305] = Animation();
+  animation_map[305].set_sprite_sheet(&tile_sheet);
+  animation_map[305].add_frame(sf::IntRect(0, 64, 32, 32));
+  animation_map[305].add_frame(sf::IntRect(32, 64, 32, 32));
+  animation_map[305].add_frame(sf::IntRect(64, 64, 32, 32));
+  animation_map[305].add_frame(sf::IntRect(96, 64, 32, 32));
+  animation_map[305].set_frame_time(5);
+  animation_map[305].set_frame(0);
 
   //Radio
-  animations[6].set_sprite_sheet(&tile_sheet);
-  animations[6].add_frame(sf::IntRect(0, 128, 32, 32));
-  animations[6].add_frame(sf::IntRect(32, 128, 32, 32));
-  animations[6].add_frame(sf::IntRect(64, 128, 32, 32));
-  animations[6].add_frame(sf::IntRect(32, 128, 32, 32));
-  animations[6].set_frame_time(5);
-  animations[6].set_frame(0);
+  animation_map[306] = Animation();
+  animation_map[306].set_sprite_sheet(&tile_sheet);
+  animation_map[306].add_frame(sf::IntRect(0, 128, 32, 32));
+  animation_map[306].add_frame(sf::IntRect(32, 128, 32, 32));
+  animation_map[306].add_frame(sf::IntRect(64, 128, 32, 32));
+  animation_map[306].add_frame(sf::IntRect(32, 128, 32, 32));
+  animation_map[306].set_frame_time(5);
+  animation_map[306].set_frame(0);
 
 }
 
@@ -248,7 +270,7 @@ void reset_game(bool hard=false) {
   player->reset();
   clear_game_entities();
   game_mode = GAME_NEXT_LEVEL;
-  game_map->load_level(proc_path, current_level, player, &camera, animations, tile_animations, sounds, game_entities);
+  game_map->load_level(proc_path, current_level, player, &camera, &animation_map, sounds, game_entities);
   player->walk_right();
   framerate = fps_clock.restart().asSeconds();
 }
@@ -263,8 +285,8 @@ void init_game()
   player->set_movement(0, 0);
   player->set_fall_speed(GRAVITY, TERMINAL_VELOCITY);
   player->set_jump_speed(JUMP_SPEED);
-  player->set_walk_frames(&animations[1], &animations[0]);
-  player->set_stand_frames(&animations[2], &animations[3]);
+  player->set_walk_frames(&animation_map[300], &animation_map[301]);
+  player->set_stand_frames(&animation_map[302], &animation_map[303]);
 
   camera.set_absolute(0, 0);
   camera.set_window_size(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -287,8 +309,6 @@ void deinitialize_game(sf::RenderWindow* window) {
   delete[] sprites;
   delete[] sound_buffers;
   delete[] sounds;
-  delete[] animations;
-  delete[] tile_animations;
   for (std::list<Entity *>::iterator it=game_entities.begin(); it != game_entities.end(); ++it) {
     delete *it;
   }
