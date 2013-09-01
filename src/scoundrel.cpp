@@ -144,6 +144,24 @@ void init_tile_animations() {
   animation_map[4].add_frame(sf::IntRect(0, 0, 32, 32));
   animation_map[4].set_frame(0);
 
+  //Gray Rock 1
+  animation_map[5] = Animation();
+  animation_map[5].set_sprite_sheet(&tile_sheet);
+  animation_map[5].add_frame(sf::IntRect(96, 0, 32, 32));
+  animation_map[5].set_frame(0);
+
+  //Gray Rock 2
+  animation_map[6] = Animation();
+  animation_map[6].set_sprite_sheet(&tile_sheet);
+  animation_map[6].add_frame(sf::IntRect(128, 0, 32, 32));
+  animation_map[6].set_frame(0);
+
+  //Gray Rock Ground 1
+  animation_map[7] = Animation();
+  animation_map[7].set_sprite_sheet(&tile_sheet);
+  animation_map[7].add_frame(sf::IntRect(288, 0, 32, 32));
+  animation_map[7].set_frame(0);
+
   //Brown Spikes
   animation_map[100] = Animation();
   animation_map[100].set_sprite_sheet(&tile_sheet);
@@ -167,6 +185,12 @@ void init_tile_animations() {
   animation_map[103].set_sprite_sheet(&tile_sheet);
   animation_map[103].add_frame(sf::IntRect(64, 96, 32, 32));
   animation_map[103].set_frame(0);
+
+  //Floor Gray Spikes
+  animation_map[104] = Animation();
+  animation_map[104].set_sprite_sheet(&tile_sheet);
+  animation_map[104].add_frame(sf::IntRect(192, 0, 32, 32));
+  animation_map[104].set_frame(0);
 
   //Player walk left
   animation_map[300] = Animation();
