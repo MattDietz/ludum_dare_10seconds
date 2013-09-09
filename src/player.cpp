@@ -105,6 +105,22 @@ void Player::walk_right() {
   set_state(ENTITY_WALKING);
 }
 
+void Player::float_up() {
+  apply_movement(0, -_walk);
+  if (_movement.y < -_max_walk)
+    set_movement(_movement.x, -_max_walk);
+}
+
+void Player::float_down() {
+  apply_movement(0, _walk);
+  if (_movement.y >_max_walk)
+    set_movement(_movement.x, _max_walk);
+}
+
+void Player::stop_floating() {
+  set_movement(_movement.x, 0.f);
+}
+
 void Player::stop_walking() {
   //Decelerate
   if (_state == ENTITY_WALKING) {
