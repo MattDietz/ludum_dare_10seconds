@@ -39,6 +39,9 @@ public:
   void set_walk_speed(float walk, float max_walk, float walk_stop);
   void walk_left();
   void walk_right();
+  void float_up();
+  void float_down();
+  void stop_floating();
   void stop_walking();
 
   void set_jump_speed(float magnitude);

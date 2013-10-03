@@ -1,8 +1,8 @@
 #ifndef SCOUNDREL_LEVEL_LOADER
 #define SCOUNDREL_LEVEL_LOADER
 
-#include <iostream>
 #include <list>
+#include <map>
 #include <string>
 #include <sstream>
 #include <fstream>
@@ -18,8 +18,7 @@
 #include "tile_helper.h"
 
 
-Tile*** load_map(std::string level_path, Player* player, Camera* camera, Animation* animations,
-              Animation* tile_animations, sf::Sound* sounds, std::list<Entity *>& game_entities,
-              TileHelper* tile_helper, int& map_width, int& map_height);
+Tile*** load_map(std::string level_path, Player* player, Camera* camera, std::map<int, Animation>* animation_map,
+                 sf::Sound* sounds, std::list<Entity *>& game_entities, TileHelper* tile_helper, int& map_width, int& map_height);
 
 #endif

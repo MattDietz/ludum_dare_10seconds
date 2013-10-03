@@ -1,5 +1,6 @@
 #include <iostream>
 #include <list>
+#include <map>
 #include <sstream>
 #include <string>
 #include <stdlib.h>
@@ -9,8 +10,13 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 
+#ifndef SCOUNDREL_COMMAND_LINE
+#include "configfile.h"
+#include "configitem.h"
+#else
 #include "config_lib/configfile.h"
 #include "config_lib/configitem.h"
+#endif
 
 #include "animation.h"
 #include "battery.h"
@@ -22,9 +28,9 @@
 #include "tile.h"
 #include "tile_helper.h"
 
-enum game_modes {GAME_PLAY, GAME_END, GAME_WIN, GAME_NEXT_LEVEL};
+enum game_modes {GAME_PLAY, GAME_END, GAME_WIN, GAME_NEXT_LEVEL, GAME_MAP_EDIT};
 
-//TODO: move away from all the globals. 
+//TODO: move away from all the globals.
 const float WALK = 0.25f;
 const float MAX_WALK = 4.f;
 const float WALK_STOP = 1.2f;
@@ -55,12 +61,11 @@ sf::Clock fps_clock, game_clock;
 float game_time;
 sf::SoundBuffer* sound_buffers;
 sf::Sound* sounds;
-Animation* animations, *tile_animations;
+std::map<int, Animation> animation_map;
+
 game_modes game_mode;
 int game_start_level, current_level, total_levels;
 std::string proc_path;
-
-//Linked list would be much more efficient overall but I don't care right now
 std::list<Entity*> game_entities;
 
 float framerate = 0.f;
@@ -71,7 +76,6 @@ std::string full_path(std::string file_path)
 {
   std::stringstream final_path;
   final_path << proc_path << "/" << file_path;
-  std::cout << final_path.str() << std::endl;
   return final_path.str();
 }
 
@@ -110,103 +114,142 @@ sf::RenderWindow* init_sfml() {
 
 void init_tile_animations() {
   tile_sheet = load_image(full_path("tile_sheet.png"));
-  animations = new Animation[NUM_ANIMATIONS];
-  tile_animations = new Animation[NUM_ANIMATIONS];
+
+  //TODO: offload these into a config file later
 
   //Rock 1 Tile
-  tile_animations[0].set_sprite_sheet(&tile_sheet);
-  tile_animations[0].add_frame(sf::IntRect(32, 0, 32, 32));
-  tile_animations[0].set_frame(0);
+  animation_map[1] = Animation();
+  animation_map[1].set_sprite_sheet(&tile_sheet);
+  animation_map[1].add_frame(sf::IntRect(32, 0, 32, 32));
+  animation_map[1].set_frame(0);
 
   //Rock 2 Tile
-  tile_animations[1].set_sprite_sheet(&tile_sheet);
-  tile_animations[1].add_frame(sf::IntRect(64, 0, 32, 32));
-  tile_animations[1].set_frame(0);
+  animation_map[2] = Animation();
+  animation_map[2].set_sprite_sheet(&tile_sheet);
+  animation_map[2].add_frame(sf::IntRect(64, 0, 32, 32));
+  animation_map[2].set_frame(0);
 
   //Rock 1 Ground
-  tile_animations[2].set_sprite_sheet(&tile_sheet);
-  tile_animations[2].add_frame(sf::IntRect(224, 0, 32, 32));
-  tile_animations[2].set_frame(0);
-
-  //Brown Spikes
-  tile_animations[3].set_sprite_sheet(&tile_sheet);
-  tile_animations[3].add_frame(sf::IntRect(160, 0, 32, 32));
-  tile_animations[3].set_frame(0);
-
-  //Ceiling Brown Spikes
-  tile_animations[4].set_sprite_sheet(&tile_sheet);
-  tile_animations[4].add_frame(sf::IntRect(0, 96, 32, 32));
-  tile_animations[4].set_frame(0);
-
-  //Right Facing Brown Spikes
-  tile_animations[5].set_sprite_sheet(&tile_sheet);
-  tile_animations[5].add_frame(sf::IntRect(32, 96, 32, 32));
-  tile_animations[5].set_frame(0);
-
-  //left Facing Brown Spikes
-  tile_animations[6].set_sprite_sheet(&tile_sheet);
-  tile_animations[6].add_frame(sf::IntRect(64, 96, 32, 32));
-  tile_animations[6].set_frame(0);
+  animation_map[3] = Animation();
+  animation_map[3].set_sprite_sheet(&tile_sheet);
+  animation_map[3].add_frame(sf::IntRect(224, 0, 32, 32));
+  animation_map[3].set_frame(0);
 
   //Dead Grass
-  tile_animations[7].set_sprite_sheet(&tile_sheet);
-  tile_animations[7].add_frame(sf::IntRect(0, 0, 32, 32));
-  tile_animations[7].set_frame(0);
+  animation_map[4] = Animation();
+  animation_map[4].set_sprite_sheet(&tile_sheet);
+  animation_map[4].add_frame(sf::IntRect(0, 0, 32, 32));
+  animation_map[4].set_frame(0);
 
-  //Player walk right
-  animations[0].set_sprite_sheet(&tile_sheet);
-  animations[0].add_frame(sf::IntRect(0, 32, 32, 32));
-  animations[0].add_frame(sf::IntRect(32, 32, 32, 32));
-  animations[0].add_frame(sf::IntRect(64, 32, 32, 32));
-  animations[0].add_frame(sf::IntRect(32, 32, 32, 32));
-  animations[0].set_frame_time(5);
-  animations[0].set_frame(0);
+  //Gray Rock 1
+  animation_map[5] = Animation();
+  animation_map[5].set_sprite_sheet(&tile_sheet);
+  animation_map[5].add_frame(sf::IntRect(96, 0, 32, 32));
+  animation_map[5].set_frame(0);
+
+  //Gray Rock 2
+  animation_map[6] = Animation();
+  animation_map[6].set_sprite_sheet(&tile_sheet);
+  animation_map[6].add_frame(sf::IntRect(128, 0, 32, 32));
+  animation_map[6].set_frame(0);
+
+  //Gray Rock Ground 1
+  animation_map[7] = Animation();
+  animation_map[7].set_sprite_sheet(&tile_sheet);
+  animation_map[7].add_frame(sf::IntRect(288, 0, 32, 32));
+  animation_map[7].set_frame(0);
+
+  //Brown Spikes
+  animation_map[100] = Animation();
+  animation_map[100].set_sprite_sheet(&tile_sheet);
+  animation_map[100].add_frame(sf::IntRect(160, 0, 32, 32));
+  animation_map[100].set_frame(0);
+
+  //Ceiling Brown Spikes
+  animation_map[101] = Animation();
+  animation_map[101].set_sprite_sheet(&tile_sheet);
+  animation_map[101].add_frame(sf::IntRect(0, 96, 32, 32));
+  animation_map[101].set_frame(0);
+
+  //Right Facing Brown Spikes
+  animation_map[102] = Animation();
+  animation_map[102].set_sprite_sheet(&tile_sheet);
+  animation_map[102].add_frame(sf::IntRect(32, 96, 32, 32));
+  animation_map[102].set_frame(0);
+
+  //left Facing Brown Spikes
+  animation_map[103] = Animation();
+  animation_map[103].set_sprite_sheet(&tile_sheet);
+  animation_map[103].add_frame(sf::IntRect(64, 96, 32, 32));
+  animation_map[103].set_frame(0);
+
+  //Floor Gray Spikes
+  animation_map[104] = Animation();
+  animation_map[104].set_sprite_sheet(&tile_sheet);
+  animation_map[104].add_frame(sf::IntRect(192, 0, 32, 32));
+  animation_map[104].set_frame(0);
 
   //Player walk left
-  animations[1].set_sprite_sheet(&tile_sheet);
-  animations[1].add_frame(sf::IntRect(96, 32, 32, 32));
-  animations[1].add_frame(sf::IntRect(128, 32, 32, 32));
-  animations[1].add_frame(sf::IntRect(160, 32, 32, 32));
-  animations[1].add_frame(sf::IntRect(128, 32, 32, 32));
-  animations[1].set_frame_time(5);
-  animations[1].set_frame(0);
+  animation_map[300] = Animation();
+  animation_map[300].set_sprite_sheet(&tile_sheet);
+  animation_map[300].add_frame(sf::IntRect(96, 32, 32, 32));
+  animation_map[300].add_frame(sf::IntRect(128, 32, 32, 32));
+  animation_map[300].add_frame(sf::IntRect(160, 32, 32, 32));
+  animation_map[300].add_frame(sf::IntRect(128, 32, 32, 32));
+  animation_map[300].set_frame_time(5);
+  animation_map[300].set_frame(0);
+
+  //Player walk right
+  animation_map[301] = Animation();
+  animation_map[301].set_sprite_sheet(&tile_sheet);
+  animation_map[301].add_frame(sf::IntRect(0, 32, 32, 32));
+  animation_map[301].add_frame(sf::IntRect(32, 32, 32, 32));
+  animation_map[301].add_frame(sf::IntRect(64, 32, 32, 32));
+  animation_map[301].add_frame(sf::IntRect(32, 32, 32, 32));
+  animation_map[301].set_frame_time(5);
+  animation_map[301].set_frame(0);
 
   //Player stand left
-  animations[2].set_sprite_sheet(&tile_sheet);
-  animations[2].add_frame(sf::IntRect(96, 32, 32, 32));
-  animations[2].set_frame(0);
+  animation_map[302] = Animation();
+  animation_map[302].set_sprite_sheet(&tile_sheet);
+  animation_map[302].add_frame(sf::IntRect(96, 32, 32, 32));
+  animation_map[302].set_frame(0);
 
   //Player stand right
-  animations[3].set_sprite_sheet(&tile_sheet);
-  animations[3].add_frame(sf::IntRect(0, 32, 32, 32));
-  animations[3].set_frame(0);
+  animation_map[303] = Animation();
+  animation_map[303].set_sprite_sheet(&tile_sheet);
+  animation_map[303].add_frame(sf::IntRect(0, 32, 32, 32));
+  animation_map[303].set_frame(0);
 
   //Battery
-  animations[4].set_sprite_sheet(&tile_sheet);
-  animations[4].add_frame(sf::IntRect(352, 0, 32, 32));
-  animations[4].add_frame(sf::IntRect(384, 0, 32, 32));
-  animations[4].add_frame(sf::IntRect(416, 0, 32, 32));
-  animations[4].add_frame(sf::IntRect(384, 0, 32, 32));
-  animations[4].set_frame_time(5);
-  animations[4].set_frame(0);
+  animation_map[304] = Animation();
+  animation_map[304].set_sprite_sheet(&tile_sheet);
+  animation_map[304].add_frame(sf::IntRect(352, 0, 32, 32));
+  animation_map[304].add_frame(sf::IntRect(384, 0, 32, 32));
+  animation_map[304].add_frame(sf::IntRect(416, 0, 32, 32));
+  animation_map[304].add_frame(sf::IntRect(384, 0, 32, 32));
+  animation_map[304].set_frame_time(5);
+  animation_map[304].set_frame(0);
 
   //Exit Arrow
-  animations[5].set_sprite_sheet(&tile_sheet);
-  animations[5].add_frame(sf::IntRect(0, 64, 32, 32));
-  animations[5].add_frame(sf::IntRect(32, 64, 32, 32));
-  animations[5].add_frame(sf::IntRect(64, 64, 32, 32));
-  animations[5].add_frame(sf::IntRect(96, 64, 32, 32));
-  animations[5].set_frame_time(5);
-  animations[5].set_frame(0);
+  animation_map[305] = Animation();
+  animation_map[305].set_sprite_sheet(&tile_sheet);
+  animation_map[305].add_frame(sf::IntRect(0, 64, 32, 32));
+  animation_map[305].add_frame(sf::IntRect(32, 64, 32, 32));
+  animation_map[305].add_frame(sf::IntRect(64, 64, 32, 32));
+  animation_map[305].add_frame(sf::IntRect(96, 64, 32, 32));
+  animation_map[305].set_frame_time(5);
+  animation_map[305].set_frame(0);
 
   //Radio
-  animations[6].set_sprite_sheet(&tile_sheet);
-  animations[6].add_frame(sf::IntRect(0, 128, 32, 32));
-  animations[6].add_frame(sf::IntRect(32, 128, 32, 32));
-  animations[6].add_frame(sf::IntRect(64, 128, 32, 32));
-  animations[6].add_frame(sf::IntRect(32, 128, 32, 32));
-  animations[6].set_frame_time(5);
-  animations[6].set_frame(0);
+  animation_map[306] = Animation();
+  animation_map[306].set_sprite_sheet(&tile_sheet);
+  animation_map[306].add_frame(sf::IntRect(0, 128, 32, 32));
+  animation_map[306].add_frame(sf::IntRect(32, 128, 32, 32));
+  animation_map[306].add_frame(sf::IntRect(64, 128, 32, 32));
+  animation_map[306].add_frame(sf::IntRect(32, 128, 32, 32));
+  animation_map[306].set_frame_time(5);
+  animation_map[306].set_frame(0);
 
 }
 
@@ -248,7 +291,7 @@ void reset_game(bool hard=false) {
   player->reset();
   clear_game_entities();
   game_mode = GAME_NEXT_LEVEL;
-  game_map->load_level(proc_path, current_level, player, &camera, animations, tile_animations, sounds, game_entities);
+  game_map->load_level(proc_path, current_level, player, &camera, &animation_map, sounds, game_entities);
   player->walk_right();
   framerate = fps_clock.restart().asSeconds();
 }
@@ -263,8 +306,8 @@ void init_game()
   player->set_movement(0, 0);
   player->set_fall_speed(GRAVITY, TERMINAL_VELOCITY);
   player->set_jump_speed(JUMP_SPEED);
-  player->set_walk_frames(&animations[1], &animations[0]);
-  player->set_stand_frames(&animations[2], &animations[3]);
+  player->set_walk_frames(&animation_map[300], &animation_map[301]);
+  player->set_stand_frames(&animation_map[302], &animation_map[303]);
 
   camera.set_absolute(0, 0);
   camera.set_window_size(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -287,8 +330,6 @@ void deinitialize_game(sf::RenderWindow* window) {
   delete[] sprites;
   delete[] sound_buffers;
   delete[] sounds;
-  delete[] animations;
-  delete[] tile_animations;
   for (std::list<Entity *>::iterator it=game_entities.begin(); it != game_entities.end(); ++it) {
     delete *it;
   }
@@ -302,15 +343,16 @@ void check_and_move_camera() {
   cam_snap_horz = camera.point_snap_horizontal(player_coords);
   cam_snap_vert = camera.point_snap_vertical(player_coords);
 
-  if (cam_snap_horz == Camera::SNAP_LEFT) {
+  sf::Vector2f player_move = player->get_movement();
+  if (player_move.x < 0 && cam_snap_horz == Camera::SNAP_LEFT) {
     camera.move(player->get_movement().x, 0);
-  } else if (cam_snap_horz == Camera::SNAP_RIGHT) {
+  } else if (player_move.x > 0 && cam_snap_horz == Camera::SNAP_RIGHT) {
     camera.move(player->get_movement().x, 0);
   }
 
-  if (cam_snap_vert == Camera::SNAP_TOP) {
+  if (player_move.y < 0 && cam_snap_vert == Camera::SNAP_TOP) {
     camera.move(0, player->get_movement().y);
-  } else if (cam_snap_vert == Camera::SNAP_BOTTOM) {
+  } else if (player_move.y > 0 && cam_snap_vert == Camera::SNAP_BOTTOM) {
     camera.move(0, player->get_movement().y);
   }
 }
@@ -370,7 +412,7 @@ void player_collide_bottom(Point left, Point right, Point left_delta, Point righ
        * Still falling -> do nothing
        * landed -> unset(ENTITY_JUMPING) - landed counts as 1 px above the tile
        */
-      if (delta_y <= 1.f) {
+      if (delta_y == 1.f) {
         player->unset_state(ENTITY_JUMPING);
         player->set_movement(player_movement.x, 0);
       } else if (delta_y > 1.f && delta_y <= player_movement.y) {
@@ -408,8 +450,11 @@ void player_collide_left(Point top, Point bottom, Point top_delta, Point bottom_
       float delta_x = float(top.x - (tile_world.x + TILE_WIDTH));
       if (delta_x <= 0.f) {
         player->set_movement(0, player_movement.y);
-      } else if (delta_x > 0.f && -delta_x >= player_movement.x) {
-        player->set_movement(0, player_movement.y);
+      } else if (delta_x > 0.f) {
+        if (-delta_x >= player_movement.x)
+          player->set_movement(-delta_x, player_movement.y);
+        else
+          player->set_movement(0, player_movement.y);
       }
     }
   }
@@ -425,6 +470,8 @@ void player_collide_right(Point top, Point bottom, Point top_delta, Point bottom
 
   Point player_tile_bottom = tile_helper.toTileCoords(bottom_delta);
   for (int i = (int)player_tile_top.y; i <= (int)player_tile_bottom.y; ++i) {
+    Point pos = player->position();
+    Rectangle rect = player->get_bounding_rect();
     int ptt = (int)player_tile_top.x;
     if (game_map->get_tile(ptt, i)->is_deadly()) {
       player->kill();
@@ -436,8 +483,11 @@ void player_collide_right(Point top, Point bottom, Point top_delta, Point bottom
       float delta_x = float(tile_world.x - top.x);
       if (delta_x <= 0.f) {
         player->set_movement(0, player_movement.y);
-      } else if (delta_x > 0.f && delta_x > player_movement.x) {
-        player->set_movement(delta_x - 1, player_movement.y);
+      } else if (delta_x > 0.f) {
+        if (delta_x > player_movement.x)
+          player->set_movement(delta_x, player_movement.y);
+        else
+          player->set_movement(0.f, player_movement.y);
       }
       return;
     }
@@ -451,7 +501,6 @@ void player_move_up(float delta) {
   Point player_right_coords(player_rect.right(), player_rect.top());
   Point player_delta_left(player_left_coords.x, player_left_coords.y + delta);
   Point player_delta_right(player_right_coords.x, player_right_coords.y + delta);
-
   player_collide_top(player_left_coords, player_right_coords, player_delta_left, player_delta_right);
 }
 
@@ -484,33 +533,58 @@ void player_move_right(float delta) {
   Point player_bottom_coords(player_rect.right(), player_rect.bottom());
   Point player_delta_top(player_top_coords.x + delta, player_top_coords.y);
   Point player_delta_bottom(player_bottom_coords.x + delta, player_bottom_coords.y);
-
   player_collide_right(player_top_coords, player_bottom_coords, player_delta_top, player_delta_bottom);
 }
 
+void player_move_map_left(float delta) {
+  player->move(Point(delta, 0));
+}
 
+void player_move_map_right(float delta) {
+  player->move(Point(delta, 0));
+}
+
+void player_move_map_up(float delta) {
+  player->move(Point(0, delta));
+}
+
+void player_move_map_down(float delta) {
+  player->move(Point(0, delta));
+}
 
 void player_move() {
-  player->fall();
-  sf::Vector2f player_move = player->get_movement();
+  if (game_mode == GAME_PLAY) {
+    player->fall();
+    sf::Vector2f player_move = player->get_movement();
 
-  if (player_move.x > 0)
-    player_move_right(player_move.x);
-  else if (player_move.x < 0)
-    player_move_left(player_move.x);
+    if (player_move.x > 0)
+      player_move_right(player_move.x);
+    else if (player_move.x < 0)
+      player_move_left(player_move.x);
 
-  if (player_move.y > 0)
-    player_move_down(player_move.y);
-  else if (player_move.y < 0)
-    player_move_up(player_move.y);
+    if (player_move.y > 0)
+      player_move_down(player_move.y);
+    else if (player_move.y < 0)
+      player_move_up(player_move.y);
 
-  player_move = player->get_movement();
-  if (player_move.x == 0.f && player_move.y == 0.f)
-    player->set_state(ENTITY_STANDING);
-  if (player_move.y != 0.f)
-    player->set_state(ENTITY_JUMPING); //technically falling
+    player_move = player->get_movement();
+    if (player_move.x == 0.f && player_move.y == 0.f)
+      player->set_state(ENTITY_STANDING);
+    if (player_move.y != 0.f)
+      player->set_state(ENTITY_JUMPING); //technically falling
+    player->move(Point(player_move.x, player_move.y));
+  } else if (game_mode == GAME_MAP_EDIT) {
+    sf::Vector2f player_move = player->get_movement();
+    if (key_state.right_pressed)
+      player_move_map_right(player_move.x);
+    else if (key_state.left_pressed)
+      player_move_map_left(player_move.x);
 
-  player->move(Point(player_move.x, player_move.y));
+    if (key_state.up_pressed)
+      player_move_map_up(player_move.y);
+    else if (key_state.down_pressed)
+      player_move_map_down(player_move.y);
+  }
 }
 
 void handle_events(sf::RenderWindow* window) {
@@ -520,9 +594,21 @@ void handle_events(sf::RenderWindow* window) {
 
       if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
         key_state.left_pressed = true;
-      } 
+      }
       if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
         key_state.right_pressed = true;
+      }
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+        key_state.down_pressed = true;
+      }
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
+        key_state.up_pressed = true;
+      }
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::F5)) {
+        if (game_mode == GAME_PLAY)
+          game_mode = GAME_MAP_EDIT;
+        else
+          game_mode = GAME_PLAY;
       }
 
       if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
@@ -550,9 +636,15 @@ void handle_events(sf::RenderWindow* window) {
     } else if (event.type == sf::Event::KeyReleased) {
       if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
         key_state.left_pressed = false;
-      } 
+      }
       if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
         key_state.right_pressed = false;
+      }
+      if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
+        key_state.up_pressed = false;
+      }
+      if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+        key_state.down_pressed = false;
       }
       if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
         key_state.space_pressed = false;
@@ -568,16 +660,30 @@ void handle_events(sf::RenderWindow* window) {
     player->walk_left();
   if (key_state.right_pressed)
     player->walk_right();
+  if (game_mode == GAME_MAP_EDIT) {
+    if (key_state.up_pressed)
+      player->float_up();
+    if (key_state.down_pressed)
+      player->float_down();
+    if (!key_state.up_pressed && !key_state.down_pressed) {
+      player->stop_floating();
+    }
+  }
 
-  if (key_state.space_pressed && !key_state.space_was_pressed) {
-    sounds[0].play();
-    player->jump();
-    key_state.space_was_pressed = true;
+  if (game_mode == GAME_PLAY) {
+    if (key_state.space_pressed && !key_state.space_was_pressed) {
+      sounds[0].play();
+      player->jump();
+      key_state.space_was_pressed = true;
+    }
+  } else if (game_mode == GAME_MAP_EDIT) {
+    // Set tile
   }
 
   if (!key_state.left_pressed && !key_state.right_pressed) {
     player->stop_walking();
   }
+  
 }
 
 
@@ -692,12 +798,13 @@ void game_loop(sf::RenderWindow* window) {
     } else if (game_mode == GAME_NEXT_LEVEL) {
       draw_next_level_screen(window);
       framerate = fps_clock.restart().asSeconds();
-    } else if (game_mode == GAME_PLAY) {
+    } else if (game_mode == GAME_PLAY || game_mode == GAME_MAP_EDIT) {
       Rectangle view = camera.get_view_rect();
       Point camera_pos = view.upper_left();
       
       player_move();
-      collide_objects();
+      if (game_mode == GAME_PLAY)
+        collide_objects();
 
       if (!player->is_alive()) {
         sounds[2].play();
@@ -737,10 +844,12 @@ void game_loop(sf::RenderWindow* window) {
         display_framerate(window);
       draw_clock(window);
 
-      framerate = fps_clock.restart().asSeconds();
-      game_time -= framerate;
-      if (game_time <= 0.f) {
-        player->kill();
+      if (game_mode == GAME_PLAY) {
+        framerate = fps_clock.restart().asSeconds();
+        game_time -= framerate;
+        if (game_time <= 0.f) {
+          player->kill();
+        }
       }
     }
     window->display();
@@ -752,7 +861,6 @@ int main(int argc, char ** argv)
 {
   char full_path[1024];
   realpath(argv[0], full_path);
-  std::cout << full_path << std::endl;
 
   proc_path = full_path;
   unsigned found = proc_path.find_last_of("/");
