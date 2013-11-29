@@ -61,6 +61,16 @@ void Animation::set_frame(int frame)
   _vertices[3].texCoords = sf::Vector2f(right, top);
 }
 
+void Animation::setColor(int r, int g, int b, int a) {
+  sf::Color col;
+  for (int i = 0; i < 4; ++i) {
+    _vertices[i].color.r = r;
+    _vertices[i].color.g = g;
+    _vertices[i].color.b = b;
+    _vertices[i].color.a = a;
+  }
+}
+
 void Animation::draw(sf::RenderTarget& target, sf::RenderStates states) const
 {
   states.transform *= getTransform();

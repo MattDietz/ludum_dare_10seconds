@@ -55,6 +55,10 @@ Point Entity::position() {
   return _position;
 }
 
+int Entity::get_illumination() {
+  return 0;
+}
+
 Rectangle Entity::get_bounding_rect() {
   float left = _position.x + _bounding_rect.left();
   float top = _position.y + _bounding_rect.top();

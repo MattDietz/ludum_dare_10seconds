@@ -20,3 +20,7 @@ void ExitArrow::perform_collision_action(Player* player, float& game_time, int& 
   current_level++;
   kill();
 }
+
+int ExitArrow::get_illumination() {
+  return 180;
+}

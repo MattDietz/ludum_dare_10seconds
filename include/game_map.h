@@ -1,6 +1,7 @@
 #ifndef SCOUNDREL_GAMEMAP
 #define SCOUNDREL_GAMEMAP
 
+#include <cmath>
 #include <iostream>
 #include <list>
 #include <map>
@@ -22,7 +23,7 @@ public:
   Tile* get_tile(int x, int y);
   void load_level(std::string proc_path, int level, Player* player, Camera* camera, std::map<int, Animation>* animation_map,
                   sf::Sound* sounds, std::list<Entity *>&game_entities);
-  void draw(sf::RenderWindow* window, Point camera_pos, Point draw_start, Point draw_end);
+  void draw(sf::RenderWindow* window, Point camera_pos, Point draw_start, Point draw_end, std::list<Entity *> game_entities);
   void clear();
   int get_width();
   int get_height();

@@ -24,6 +24,7 @@ public:
   virtual Point position();
   virtual void set_movement(float mag_x, float mag_y);
   virtual sf::Vector2f get_movement();
+  virtual int get_illumination();
 
 protected:
   sf::Vector2f _movement;

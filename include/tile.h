@@ -13,8 +13,9 @@ class Tile {
 public:
   Tile(bool passable=true, bool deadly=false);
   Tile(Animation* animation, bool passable=true, bool deadly=false);
-  void draw(sf::RenderWindow* window, Point position);
+  void draw(sf::RenderWindow* window, Point position, float brightness);
   void set_animation(Animation* animation);
+  Animation * get_animation();
   void set_passable(bool state);
   bool is_deadly();
   bool passable();

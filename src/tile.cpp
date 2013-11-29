@@ -16,7 +16,11 @@ void Tile::set_animation(Animation* animation) {
   _animation = animation;
 }
 
-void Tile::draw(sf::RenderWindow* window, Point position) {
+Animation* Tile::get_animation() {
+  return _animation;
+}
+
+void Tile::draw(sf::RenderWindow* window, Point position, float brightness) {
   if (_animation) {
     _animation->setPosition(position.x, position.y);
     window->draw(*_animation);

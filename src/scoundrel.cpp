@@ -801,7 +801,7 @@ void game_loop(sf::RenderWindow* window) {
     } else if (game_mode == GAME_PLAY || game_mode == GAME_MAP_EDIT) {
       Rectangle view = camera.get_view_rect();
       Point camera_pos = view.upper_left();
-      
+
       player_move();
       if (game_mode == GAME_PLAY)
         collide_objects();
@@ -832,7 +832,7 @@ void game_loop(sf::RenderWindow* window) {
       draw_end.x = draw_end.x < 0 ? 0 : draw_end.x;
       draw_end.y = draw_end.y < 0 ? 0 : draw_end.y;
 
-      game_map->draw(window, camera_pos, draw_start, draw_end);
+      game_map->draw(window, camera_pos, draw_start, draw_end, game_entities);
 
       for (std::list<Entity *>::iterator it=game_entities.begin(); it != game_entities.end(); ++it) {
         (*it)->draw(window, camera_pos);

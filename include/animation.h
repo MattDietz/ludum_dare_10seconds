@@ -3,6 +3,8 @@
 
 // Inspired by https://github.com/LaurentGomila/SFML/wiki/Source%3A-AnimatedSprite
 
+#include <iostream>
+
 #include <vector>
 #include <SFML/Graphics.hpp>
 
@@ -18,12 +20,14 @@ public:
   void set_frame(int frame);
   int get_frame_count();
   void increment_frame();
+  void setColor(int r=0, int g=0, int b=0, int a=0);
 
 private:
   int _current_frame;
   int _frame_time, _decay;
   sf::Vertex _vertices[4];
   std::vector<sf::IntRect> _frames;
+  sf::Color _color;
   const sf::Texture* _texture;
   virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
 };

@@ -18,6 +18,7 @@ public:
   void draw(sf::RenderWindow * window, Point camera);
   void set_pickup_sound(sf::Sound* sound);
   void perform_collision_action(Player* player, float& game_time, int& current_level);
+  int get_illumination();
 
 private:
   sf::Sound* _pickup_sound;

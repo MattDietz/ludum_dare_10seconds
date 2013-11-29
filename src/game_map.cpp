@@ -47,7 +47,7 @@ void GameMap::clear() {
   _game_map = NULL;
 }
 
-void GameMap::draw(sf::RenderWindow* window, Point camera_pos, Point draw_start, Point draw_end) {
+void GameMap::draw(sf::RenderWindow* window, Point camera_pos, Point draw_start, Point draw_end, std::list<Entity *> game_entities) {
   for (int i=draw_start.x-1; i < draw_end.x+1; ++i) {
     Point row_coords = _tile_helper->fromTileCoords(0, i);
     if (i < 0 || i == _width)
@@ -55,8 +55,39 @@ void GameMap::draw(sf::RenderWindow* window, Point camera_pos, Point draw_start,
     for (int j=draw_start.y-1; j < draw_end.y+1; ++j) {
       if (j < 0 || j == _height)
         continue;
+
+      int brightness = 0;
+      // Get the light values for the tile
+      for (std::list<Entity *>::iterator it=game_entities.begin(); it != game_entities.end(); ++it) {
+        int illum = (*it)->get_illumination();
+        if (illum > 0) {
+          Point entity_pos = (*it)->position();
+          Point entity_coords = _tile_helper->toTileCoords(entity_pos.x, entity_pos.y);
+          float delta_x = i - entity_coords.x;
+          float delta_y = j - entity_coords.y;
+
+          float dx2 = delta_x * delta_x;
+          float dy2 = delta_y * delta_y;
+          float distance = sqrt(dx2 + dy2);
+          int light = ((10 - distance) * 25);
+          if (light < 0)
+            light = 0;
+          if (light > 255)
+            light = 255;
+          if (light > brightness)
+            brightness = light;
+        }
+      }
+      //TODO(mdietz): Configurable ambient value, set later
+      if (brightness < 80)
+        brightness = 80;
+
+      Animation * anim = _game_map[i][j]->get_animation();
+      if (anim)
+        anim->setColor(255, 255, 255, brightness);
+
       _game_map[i][j]->draw(window, Point(i * _tile_helper->tile_width - camera_pos.x,
-                                          j * _tile_helper->tile_height - camera_pos.y));
+                                          j * _tile_helper->tile_height - camera_pos.y), 0.4f);
     }
   }
 }

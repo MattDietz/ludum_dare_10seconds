@@ -22,3 +22,7 @@ void Battery::perform_collision_action(Player* player, float& game_time, int& cu
   _pickup_sound->play();
   kill();
 }
+
+int Battery::get_illumination() {
+  return 255;
+}
