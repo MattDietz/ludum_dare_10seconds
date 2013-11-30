@@ -832,7 +832,7 @@ void game_loop(sf::RenderWindow* window) {
       draw_end.x = draw_end.x < 0 ? 0 : draw_end.x;
       draw_end.y = draw_end.y < 0 ? 0 : draw_end.y;
 
-      game_map->draw(window, camera_pos, draw_start, draw_end, game_entities);
+      game_map->draw(window, camera_pos, draw_start, draw_end, player, game_entities);
 
       for (std::list<Entity *>::iterator it=game_entities.begin(); it != game_entities.end(); ++it) {
         (*it)->draw(window, camera_pos);

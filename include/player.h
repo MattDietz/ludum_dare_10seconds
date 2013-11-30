@@ -43,6 +43,7 @@ public:
   void float_down();
   void stop_floating();
   void stop_walking();
+  int get_illumination();
 
   void set_jump_speed(float magnitude);
   void set_fall_speed(float fall, float max_fall);

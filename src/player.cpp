@@ -30,6 +30,10 @@ void Player::draw(sf::RenderWindow* window, Point camera)
   }
 }
 
+int Player::get_illumination() {
+  return 120;
+}
+
 void Player::move(int x, int y) {
   _position.x += x;
   _position.y += y;

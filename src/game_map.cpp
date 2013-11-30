@@ -47,7 +47,31 @@ void GameMap::clear() {
   _game_map = NULL;
 }
 
-void GameMap::draw(sf::RenderWindow* window, Point camera_pos, Point draw_start, Point draw_end, std::list<Entity *> game_entities) {
+int GameMap::get_light(int x, int y, Entity* entity) {
+  int illum = entity->get_illumination();
+  if (illum > 255)
+    illum = 255;
+
+  if (illum > 0) {
+    Point entity_pos = entity->position();
+    Point entity_coords = _tile_helper->toTileCoords(entity_pos.x, entity_pos.y);
+    float delta_x = x - entity_coords.x;
+    float delta_y = y - entity_coords.y;
+
+    float dx2 = delta_x * delta_x;
+    float dy2 = delta_y * delta_y;
+    float distance = sqrt(dx2 + dy2);
+    int light = ((10 - distance) * 25);
+    if (light < 0)
+      light = 0;
+    if (light > illum)
+      light = illum;
+    return light;
+  }
+  return 0;
+}
+
+void GameMap::draw(sf::RenderWindow* window, Point camera_pos, Point draw_start, Point draw_end, Player* player, std::list<Entity *> game_entities) {
   for (int i=draw_start.x-1; i < draw_end.x+1; ++i) {
     Point row_coords = _tile_helper->fromTileCoords(0, i);
     if (i < 0 || i == _width)
@@ -57,27 +81,18 @@ void GameMap::draw(sf::RenderWindow* window, Point camera_pos, Point draw_start,
         continue;
 
       int brightness = 0;
+      int illum = 0;
       // Get the light values for the tile
       for (std::list<Entity *>::iterator it=game_entities.begin(); it != game_entities.end(); ++it) {
-        int illum = (*it)->get_illumination();
-        if (illum > 0) {
-          Point entity_pos = (*it)->position();
-          Point entity_coords = _tile_helper->toTileCoords(entity_pos.x, entity_pos.y);
-          float delta_x = i - entity_coords.x;
-          float delta_y = j - entity_coords.y;
-
-          float dx2 = delta_x * delta_x;
-          float dy2 = delta_y * delta_y;
-          float distance = sqrt(dx2 + dy2);
-          int light = ((10 - distance) * 25);
-          if (light < 0)
-            light = 0;
-          if (light > 255)
-            light = 255;
-          if (light > brightness)
-            brightness = light;
-        }
+        illum = get_light(i, j, (*it));
+        if (illum > brightness)
+          brightness = illum;
       }
+
+      int from_player = get_light(i, j, player);
+      if (from_player > brightness)
+        brightness = from_player;
+
       //TODO(mdietz): Configurable ambient value, set later
       if (brightness < 80)
         brightness = 80;
