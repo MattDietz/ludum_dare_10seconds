@@ -13,7 +13,7 @@ void GameMap::load_level(std::string proc_path, int level, Player* player, Camer
   clear();
   std::string map_path;
   std::stringstream map_stream;
-  map_stream << proc_path << "/level" << level;
+  map_stream << proc_path << "/levels/level" << level;
   map_path = map_stream.str();
   _game_map = load_map(map_path, player, camera, animation_map, sounds, game_entities, _tile_helper, _width, _height);
 }

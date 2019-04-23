@@ -1,5 +1,6 @@
 #include "level_loader.h"
 
+
 Tile*** load_map(std::string level_path, Player* player, Camera* camera, std::map<int, Animation>* animation_map,
                  sf::Sound* sounds, std::list<Entity *>& game_entities, TileHelper* tile_helper,
                  int& map_width, int& map_height) {

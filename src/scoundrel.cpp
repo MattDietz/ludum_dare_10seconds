@@ -113,7 +113,7 @@ sf::RenderWindow* init_sfml() {
 
 
 void init_tile_animations() {
-  tile_sheet = load_image(full_path("tile_sheet.png"));
+  tile_sheet = load_image(full_path("assets/tile_sheet.png"));
 
   //TODO: offload these into a config file later
 
@@ -259,19 +259,19 @@ void init_graphics() {
 
   init_tile_animations();
 
-  game_font.loadFromFile(full_path("digital_tech.otf"));
+  game_font.loadFromFile(full_path("assets/digital_tech.otf"));
 }
 
 void init_audio() {
   sound_buffers = new sf::SoundBuffer[5];
   sounds = new sf::Sound[5];
-  sound_buffers[0].loadFromFile(full_path("jump.wav"));
+  sound_buffers[0].loadFromFile(full_path("assets/jump.wav"));
   sounds[0].setBuffer(sound_buffers[0]);
 
-  sound_buffers[1].loadFromFile(full_path("battery.wav"));
+  sound_buffers[1].loadFromFile(full_path("assets/battery.wav"));
   sounds[1].setBuffer(sound_buffers[1]);
 
-  sound_buffers[2].loadFromFile(full_path("death.wav"));
+  sound_buffers[2].loadFromFile(full_path("assets/death.wav"));
   sounds[2].setBuffer(sound_buffers[2]);
 }
 
