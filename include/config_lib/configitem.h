@@ -36,6 +36,68 @@
 namespace configlib
 {
 
+
+/*
+ * item_toggle - template function for incrementing the template class, called
+ * 				for parameterless configuration settings
+ */
+template <class _Tp>
+void item_toggle(_Tp& item, const _Tp& /*default_value*/)
+{
+	++item;
+}
+
+/*
+ * item_toggle - strings don't increment.
+ */
+void item_toggle(std::string& item, const std::string& default_value)
+{
+	if (default_value.length() > 0)
+		item.clear();
+	else
+		item = "Set";
+}
+
+/*
+ * item_toggle - bool variables should flip-flop
+ */
+void item_toggle(bool& item, const bool /*default_value*/)
+{
+	item = !item;
+}
+
+
+/*
+ * item_parse - template function for parsing a string into the template class.
+ */
+template <class _Tp>
+void item_parse(_Tp& item, const std::string& value)
+{
+	std::stringstream stream_value(value, std::stringstream::in);
+	stream_value >> item;	
+}
+
+/*
+ * item_parse - strings must be overridden or just the first word will be parsed
+ */
+void item_parse(std::string& item, const std::string& value)
+{
+	item = value;
+}
+
+/*
+ * item_get - template function for turning the template class into a string.
+ */
+template <class _Tp>
+std::string item_get(const _Tp& item)
+{
+	std::stringstream stream_value(std::stringstream::out);
+	stream_value << item;
+	return stream_value.str();
+}
+
+
+
 /*
  * Template for defining a configuration item.
  * The tamplate extends the configitem_base object with all
@@ -131,64 +193,6 @@ private:
 /**
  * Template functions to override for special cases.
  **/
-
-/*
- * item_parse - template function for parsing a string into the template class.
- */
-template <class _Tp>
-void item_parse(_Tp& item, const std::string& value)
-{
-	std::stringstream stream_value(value, std::stringstream::in);
-	stream_value >> item;	
-}
-
-/*
- * item_parse - strings must be overridden or just the first word will be parsed
- */
-void item_parse(std::string& item, const std::string& value)
-{
-	item = value;
-}
-
-/*
- * item_get - template function for turning the template class into a string.
- */
-template <class _Tp>
-std::string item_get(const _Tp& item)
-{
-	std::stringstream stream_value(std::stringstream::out);
-	stream_value << item;
-	return stream_value.str();
-}
-
-/*
- * item_toggle - template function for incrementing the template class, called
- * 				for parameterless configuration settings
- */
-template <class _Tp>
-void item_toggle(_Tp& item, const _Tp& /*default_value*/)
-{
-	++item;
-}
-
-/*
- * item_toggle - strings don't increment.
- */
-void item_toggle(std::string& item, const std::string& default_value)
-{
-	if (default_value.length() > 0)
-		item.clear();
-	else
-		item = "Set";
-}
-
-/*
- * item_toggle - bool variables should flip-flop
- */
-void item_toggle(bool& item, const bool /*default_value*/)
-{
-	item = !item;
-}
 
 }
 
