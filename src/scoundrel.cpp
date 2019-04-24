@@ -108,6 +108,7 @@ sf::Texture load_image(std::string image_path) {
 sf::RenderWindow* init_sfml() {
   sf::RenderWindow* game_window = new sf::RenderWindow();
   game_window->create(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Scoundrel");
+  game_window->setActive(true);
   return game_window;
 }
 
